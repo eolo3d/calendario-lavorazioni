@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta name="robots" content="noindex">
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lavorazioni</title>
+<style>
+:root{
+  --bg:#0b0f14; --panel:#141a21; --panel2:#1b232c;
+  --txt:#eef2f6; --dim:#93a0b0; --faint:#5d6875;
+  --accent:#4cc2ff; --alta:#ff5a5f; --ok:#3ecf7a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--txt);overflow:hidden;
+  font-family:"Inter","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+.app{height:100vh;display:flex;flex-direction:column;padding:1vw 1.3vw .7vw;gap:.8vw}
+.t1,.t2,.cliente,.indirizzo,.mi{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+.titolo{font-size:1.8vw;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.data{font-size:1.5vw;color:var(--dim);font-weight:600}
+.sxh{display:flex;align-items:center;gap:1.2vw;min-width:0}
+.dxh{justify-self:end;display:flex;align-items:center;gap:1.4vw}
+.ora{font-size:2.5vw;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.btn{font:inherit;font-size:1.05vw;font-weight:700;color:var(--accent);background:transparent;cursor:pointer;
+  border:.12vw solid var(--accent);border-radius:99vw;padding:.45vw 1.3vw;letter-spacing:.04em}
+.btn:hover,.btn:focus{background:var(--accent);color:var(--bg);outline:none}
+.btn.on{background:var(--accent);color:var(--bg)}
+
+main{flex:1;min-height:0;position:relative;display:grid;grid-template-rows:42fr 58fr;gap:.8vw}
+.pannello{background:var(--panel);border-radius:.7vw;padding:.9vw 1vw 1vw;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+h2{display:flex;justify-content:space-between;align-items:baseline;gap:1vw;font-size:1.05vw;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:.7vw}
+h2 .conta{letter-spacing:.01em;text-transform:none;color:var(--dim);font-weight:600;font-size:1vw}
+
+/* OGGI: schede affiancate */
+.scorri{flex:1;min-height:0;overflow:hidden}
+.griglia{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7vw}
+.sez{grid-column:1/-1;font-size:.85vw;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-top:.2vw}
+.sez.rit{color:var(--alta)}
+.card{display:flex;flex-direction:column;background:var(--panel2);border-radius:.6vw;border-top:.45vw solid var(--c);padding:.8vw 1vw .9vw;min-width:0}
+.card.fatto{opacity:.4}
+.card .su{display:flex;justify-content:space-between;align-items:baseline;gap:.6vw}
+.tipo{font-size:.95vw;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.prev{font-size:.85vw;color:var(--dim);font-weight:600}
+.cliente{font-size:1.5vw;font-weight:750;line-height:1.25;margin-top:.35vw}
+.indirizzo{font-size:1vw;color:var(--dim);margin-top:.15vw}
+.nota{font-size:.95vw;color:#ffd38a;margin-top:.35vw;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.chip .t3{font-size:.85vw;color:#ffd38a;margin-top:.15vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .giu{display:flex;justify-content:space-between;align-items:center;margin-top:.7vw}
+.quando{font-size:1.45vw;font-weight:700;font-variant-numeric:tabular-nums}
+.quando.r{color:var(--alta);font-size:1vw}
+.pill{font-size:.8vw;font-weight:800;padding:.25vw .75vw;border-radius:99vw;white-space:nowrap;text-transform:uppercase;letter-spacing:.06em}
+.vuoto{grid-column:1/-1;color:var(--faint);font-size:1.3vw;padding:2.5vw 0;text-align:center}
+
+/* SETTIMANA lun–ven */
+.sett{flex:1;min-height:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.7vw}
+.giorno{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--panel2);border-radius:.5vw;padding:.6vw}
+.giorno.passato{opacity:.5}
+.giorno.oggi{box-shadow:inset 0 0 0 .15vw var(--accent)}
+.tg{display:flex;justify-content:space-between;align-items:baseline;font-size:1vw;font-weight:800;color:var(--dim);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5vw;padding:0 .2vw}
+.tg b{font-size:1.6vw;color:var(--txt);letter-spacing:0}
+.giorno.oggi .tg, .giorno.oggi .tg b{color:var(--accent)}
+.box{flex:1;min-height:0;overflow:hidden}
+.chip{background:var(--bg);border-left:.35vw solid var(--c);border-radius:.35vw;padding:.45vw .6vw;margin-bottom:.45vw}
+.chip.fatto{opacity:.35}
+.chip .t1{font-size:1.1vw;font-weight:700}
+.chip .t1 .o{color:var(--accent);font-variant-numeric:tabular-nums}
+.chip .t2{font-size:.9vw;color:var(--dim);margin-top:.15vw}
+.chip .t2 b{color:var(--txt);font-weight:700}
+.piu{font-size:.9vw;color:var(--dim);font-weight:700;padding:.1vw .2vw}
+.niente{color:var(--faint);font-size:1vw;text-align:center;padding-top:1.5vw}
+
+/* MESE: panoramica a tutto schermo sopra oggi e settimana */
+.mese-vista{position:absolute;inset:0;z-index:5;display:none}
+.mese-vista.aperta{display:flex}
+.mese-vista h2 .nav{display:flex;gap:.6vw;align-items:center}
+.mese{flex:1;min-height:0;display:grid;grid-template-columns:repeat(5,1fr) .8fr .6fr;gap:.35vw}
+.gs{font-size:.8vw;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;text-align:center;font-weight:800}
+.cella{background:var(--panel2);border-radius:.4vw;padding:.3vw .5vw;display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
+.cella.fuori{background:transparent;opacity:.35}
+.cella.passato{opacity:.5}
+.cella.oggi{box-shadow:inset 0 0 0 .15vw var(--accent)}
+.cella .n{display:flex;justify-content:space-between;align-items:baseline;font-size:1vw;font-weight:800;margin-bottom:.15vw}
+.cella.oggi .n span{color:var(--accent)}
+.cella .n i{font-style:normal;font-size:.8vw;color:var(--dim);font-weight:700}
+.mi{font-size:.85vw;line-height:1.4}
+.mi .o{color:var(--accent);font-variant-numeric:tabular-nums}
+.mi.fatto{color:var(--faint);text-decoration:line-through}
+.cella .piu{font-size:.75vw;padding:0}
+
+/* GIORNO: pagina di un singolo giorno, si apre cliccando un giorno della settimana o del mese */
+.giorno-vista{position:absolute;inset:0;z-index:6;display:none}
+.giorno-vista.aperta{display:flex}
+.giorno-vista h2 .nav{display:flex;gap:.6vw;align-items:center}
+.giorno, .cella{cursor:pointer}
+.giorno:hover, .cella:hover{box-shadow:inset 0 0 0 .12vw var(--dim)}
+.giorno.oggi:hover, .cella.oggi:hover{box-shadow:inset 0 0 0 .15vw var(--accent)}
+
+/* AGGIUNGI: modulo sopra il calendario */
+.btn.pieno{background:var(--accent);color:var(--bg)}
+.btn.pieno:hover,.btn.pieno:focus{background:#7fd4ff}
+.agg-vista{position:absolute;inset:0;z-index:7;display:none;background:var(--panel);border-radius:.7vw;padding:1.1vw 1.5vw;overflow:auto}
+.agg-vista.aperta{display:block}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:.9vw 1.6vw;max-width:72vw;margin:0 auto}
+.form h2{grid-column:1/-1;margin-bottom:0}
+.campo label{display:block;font-size:max(12px,.85vw);font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:.4vw}
+.campo input,.campo textarea{width:100%;font:inherit;font-size:max(15px,1.15vw);color:var(--txt);background:var(--panel2);
+  border:.1vw solid #2c3744;border-radius:.5vw;padding:.6vw .8vw;outline:none;color-scheme:dark}
+.campo textarea{resize:vertical;min-height:4.5vw}
+.campo input:focus,.campo textarea:focus{border-color:var(--accent)}
+.campo.largo{grid-column:1/-1}
+.coppia{display:grid;grid-template-columns:1fr .7fr;gap:1vw}
+.scelte{display:flex;flex-wrap:wrap;gap:.5vw}
+.scelta{font:inherit;font-size:max(14px,1.05vw);font-weight:700;padding:.5vw 1.1vw;border-radius:99vw;border:.12vw solid #2c3744;
+  background:var(--panel2);color:var(--txt);cursor:pointer;display:flex;align-items:center;gap:.5vw}
+.scelta.on{border-color:var(--c);color:var(--c)}
+
+/* AZIONI su un lavoro: Sposta / Cancella */
+.card,.chip,.mi{cursor:pointer}
+.card:hover{background:#222c37}
+.chip:hover{background:#151c24}
+.az-vista{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(5,8,12,.72);border-radius:.7vw}
+.az-vista.aperta{display:flex}
+.az-box{width:46vw;background:var(--panel);border:.12vw solid #2c3744;border-radius:.8vw;padding:1.4vw 1.6vw}
+.az-box .tipo{font-size:max(12px,.95vw)}
+.az-box .cliente{font-size:max(18px,1.7vw);white-space:normal}
+.az-box .quando-az{font-size:max(14px,1.1vw);color:var(--dim);margin-top:.3vw}
+.az-passo{margin-top:1.2vw}
+.az-domanda{font-size:max(15px,1.2vw);font-weight:700;margin-bottom:.8vw}
+.az-riga{display:flex;gap:1vw;align-items:flex-end;flex-wrap:wrap}
+.az-riga .campo{flex:1;min-width:10vw}
+.az-pulsanti{display:flex;gap:1vw;justify-content:flex-end;align-items:center;margin-top:1.1vw}
+.btn.rosso{border-color:var(--alta);color:var(--alta)}
+.btn.rosso:hover,.btn.rosso:focus{background:var(--alta);color:#fff}
+.btn.rosso.pieno{background:var(--alta);color:#fff}
+.err{color:var(--alta);font-size:max(12px,.85vw);margin-top:.3vw;min-height:1.1em}
+.azioni{grid-column:1/-1;display:flex;justify-content:flex-end;gap:1vw;align-items:center;margin-top:.3vw}
+.esito{font-size:max(13px,1vw);font-weight:700;margin-right:auto}
+.num{display:inline-block;min-width:1.9em;text-align:center;background:var(--accent);color:var(--bg);border-radius:99vw;
+  padding:.1vw .55vw;font-size:.95vw;font-weight:800;letter-spacing:0;margin-left:.6vw;vertical-align:.05vw}
+.btn .num{background:var(--bg);color:var(--accent);margin-left:.5vw;font-size:.85vw}
+.btn.on .num{background:var(--bg);color:var(--accent)}
+.esito.ok{color:var(--ok)}.esito.ko{color:var(--alta)}
+.dot{display:inline-block;width:.6vw;height:.6vw;border-radius:50%;margin-right:.35vw;vertical-align:.05vw}
+
+footer{display:flex;justify-content:space-between;align-items:center;font-size:.85vw;color:var(--dim)}
+.legenda{display:flex;gap:1.4vw}
+.legenda span{display:flex;align-items:center;gap:.4vw}
+.legenda .dot{margin:0}
+.agg.err{color:var(--alta);font-weight:700}
+
+/* ===== TELEFONO: sotto i 760 px la pagina si mette in colonna e si scorre col dito ===== */
+@media (max-width: 760px){
+  html,body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100vh;padding:12px 12px 18px;gap:12px}
+  header{grid-template-columns:1fr 1fr;row-gap:8px;column-gap:10px}
+  .sxh,.dxh{display:contents}
+  .titolo{grid-column:1;grid-row:1;font-size:20px}
+  .ora{grid-column:2;grid-row:1;justify-self:end;font-size:22px}
+  .data{grid-column:1/-1;grid-row:2;font-size:14px}
+  #btnAggiungi{grid-column:1;grid-row:3}
+  #btnMese{grid-column:2;grid-row:3}
+  .btn{font-size:14px;padding:9px 14px;border-width:1.5px;white-space:nowrap}
+  .num{font-size:12px;padding:1px 7px;margin-left:6px}
+  .btn .num{font-size:11px}
+  main{display:flex;flex-direction:column;gap:12px;min-height:0}
+  .pannello{border-radius:12px;padding:12px;overflow:visible}
+  h2{font-size:13px;margin-bottom:10px;flex-wrap:wrap}
+  h2 .conta{font-size:12px}
+  .scorri{overflow:visible}
+  .griglia{grid-template-columns:1fr;gap:10px}
+  .sez{font-size:11px}
+  .card{border-radius:10px;border-top-width:4px;padding:10px 12px}
+  .tipo,.prev{font-size:12px}
+  .cliente{font-size:18px;white-space:normal}
+  .indirizzo{font-size:13px;white-space:normal}
+  .nota{font-size:13px}
+  .card .giu{margin-top:8px}
+  .quando{font-size:18px}
+  .quando.r{font-size:13px}
+  .pill{font-size:11px;padding:3px 9px}
+  .vuoto{font-size:15px;padding:18px 0}
+  .sett{display:flex;flex-direction:column;gap:10px}
+  .giorno{padding:10px;border-radius:10px}
+  .tg{font-size:13px;margin-bottom:8px}
+  .tg b{font-size:18px}
+  .box{overflow:visible}
+  .chip{border-left-width:4px;border-radius:6px;padding:8px 10px;margin-bottom:6px}
+  .chip .t1{font-size:15px}
+  .chip .t2,.chip .t3{font-size:12px;white-space:normal}
+  .piu{font-size:12px}
+  .niente{font-size:13px;padding:2px 0;text-align:left}
+  .dot{width:8px;height:8px;margin-right:4px}
+  /* mese, giorno, aggiungi e azioni: a tutto schermo, da scorrere */
+  .mese-vista,.giorno-vista,.agg-vista{position:fixed;inset:0;border-radius:0;overflow:auto;padding:14px 12px}
+  .mese-vista.aperta,.giorno-vista.aperta,.agg-vista.aperta{display:block}
+  .az-vista{position:fixed;border-radius:0}
+  .mese{grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:none!important;gap:3px}
+  .gs{font-size:10px;letter-spacing:.04em}
+  .cella{min-height:52px;padding:4px;border-radius:6px}
+  .cella .n{font-size:13px}
+  .cella .n i{font-size:10px;background:var(--accent);color:var(--bg);border-radius:99px;padding:0 5px}
+  .cella .box{display:none}
+  .form{grid-template-columns:1fr;max-width:none;gap:12px}
+  .coppia{gap:10px}
+  .campo label{font-size:11px;margin-bottom:5px}
+  .campo input,.campo textarea{font-size:16px;padding:9px 10px;border-width:1px;border-radius:8px}
+  .campo textarea{min-height:70px}
+  .scelte{gap:6px}
+  .scelta{font-size:14px;padding:7px 12px;gap:6px;border-width:1.5px}
+  .err,.esito{font-size:12px}
+  .az-box{width:92vw;padding:16px;border-radius:12px}
+  .az-box .tipo{font-size:12px}
+  .az-box .cliente{font-size:20px}
+  .az-box .quando-az{font-size:14px}
+  .az-passo{margin-top:14px}
+  .az-domanda{font-size:15px;margin-bottom:10px}
+  .az-riga .campo{min-width:120px}
+  .az-pulsanti{gap:8px;margin-top:14px;flex-wrap:wrap}
+  footer{flex-direction:column;align-items:flex-start;gap:6px;font-size:12px}
+  .legenda{flex-wrap:wrap;gap:10px}
+  .legenda span:last-child{display:none}
+  .legenda .dot{width:9px;height:9px;margin:0}
+}
+</style>
+</head>
+<body data-k="">
+<script>
+/* Collegamento tra la pagina su GitHub Pages e lo script Google.
+   Imita google.script.run: ogni chiamata diventa una richiesta all'app web (doPost).
+   La chiave arriva dal link: .../#k=CHIAVE (oppure ?k=CHIAVE). */
+(function(){
+  var API = 'https://script.google.com/macros/s/AKfycbzOq5uRLYzRQ0vYWyZLhWh-01LlQS_ZQgGwBj5Ap1vGCBuv0ht3Uvu76kKVmTZVqAsx9Q/exec';
+  var m = (location.hash + '&' + location.search).match(/[#?&]k=([A-Za-z0-9]+)/);
+  document.body.setAttribute('data-k', m ? m[1] : '');
+  var FUNZIONI = ['getDati', 'aggiungiDaTv', 'spostaDaTv', 'cancellaDaTv'];
+  function nuovoRunner(){
+    var ok = null, ko = null, r = {};
+    r.withSuccessHandler = function(f){ ok = f; return r; };
+    r.withFailureHandler = function(f){ ko = f; return r; };
+    FUNZIONI.forEach(function(fn){
+      r[fn] = function(){
+        var args = [].slice.call(arguments);
+        fetch(API, { method: 'POST', body: JSON.stringify({ fn: fn, args: args }) })
+          .then(function(x){ return x.json(); })
+          .then(function(d){
+            if (d && d.ok) { if (ok) ok(d.result); }
+            else if (ko) ko(new Error((d && d.error) || 'Errore'));
+          })
+          .catch(function(e){ if (ko) ko(e); });
+      };
+    });
+    return r;
+  }
+  window.google = { script: {} };
+  Object.defineProperty(window.google.script, 'run', { get: nuovoRunner });
+})();
+</script>
+<div class="app">
+  <header>
+    <div class="sxh"><div class="titolo" id="titolo">Lavorazioni</div><button class="btn pieno" id="btnAggiungi">+ Aggiungi</button></div>
+    <div class="data" id="data"></div>
+    <div class="dxh"><button class="btn" id="btnMese"><span id="btnMeseTxt">Mese</span><span class="num" id="nMeseBtn"></span></button><div class="ora" id="ora"></div></div>
+  </header>
+  <main>
+    <section class="pannello">
+      <h2><span>Oggi<span class="num" id="nOggi">0</span></span><span class="conta" id="contaOggi"></span></h2>
+      <div class="scorri" id="scorriOggi"><div class="griglia" id="listaOggi"><div class="vuoto">Caricamento…</div></div></div>
+    </section>
+    <section class="pannello">
+      <h2><span>Settimana<span class="num" id="nSett">0</span></span><span class="conta" id="titSett"></span></h2>
+      <div class="sett" id="sett"></div>
+    </section>
+    <section class="pannello mese-vista" id="meseVista">
+      <h2><span><span id="titMese">Mese</span><span class="num" id="nMese">0</span></span>
+        <span class="nav"><span class="conta" id="contaMese"></span>
+          <button class="btn" id="mPrima" aria-label="Mese precedente">‹</button>
+          <button class="btn" id="mDopo" aria-label="Mese successivo">›</button>
+          <button class="btn" id="mChiudi">Chiudi</button></span></h2>
+      <div class="mese" id="mese"></div>
+    </section>
+    <section class="pannello giorno-vista" id="giornoVista">
+      <h2><span id="titGiorno">Giorno</span>
+        <span class="nav"><span class="conta" id="contaGiorno"></span>
+          <button class="btn" id="gPrima" aria-label="Giorno precedente">‹</button>
+          <button class="btn" id="gDopo" aria-label="Giorno successivo">›</button>
+          <button class="btn" id="gChiudi">Chiudi</button></span></h2>
+      <div class="scorri"><div class="griglia" id="listaGiorno"></div></div>
+    </section>
+    <section class="az-vista" id="azVista">
+      <div class="az-box">
+        <div class="tipo" id="azTipo"></div>
+        <div class="cliente" id="azCliente"></div>
+        <div class="quando-az" id="azQuando"></div>
+        <div class="az-passo" id="azScelta">
+          <div class="az-pulsanti" style="justify-content:flex-start">
+            <button class="btn pieno" id="azSposta">Sposta</button>
+            <button class="btn rosso" id="azCancella">Cancella</button>
+            <span style="flex:1"></span>
+            <button class="btn" id="azChiudi">Chiudi</button>
+          </div>
+        </div>
+        <div class="az-passo" id="azPassoSposta" style="display:none">
+          <div class="az-domanda">Spostare a quale data?</div>
+          <div class="az-riga">
+            <div class="campo"><label for="azData">Nuova data</label><input type="date" id="azData"></div>
+            <div class="campo"><label for="azOra">Ora</label><input type="time" id="azOra"></div>
+          </div>
+          <div class="az-pulsanti"><span class="esito" id="azEsitoS"></span>
+            <button class="btn" id="azIndietroS">Indietro</button><button class="btn pieno" id="azConfermaS">Sposta qui</button></div>
+        </div>
+        <div class="az-passo" id="azPassoCancella" style="display:none">
+          <div class="az-domanda">Cancellare questo lavoro dal calendario? Non si può annullare dalla TV.</div>
+          <div class="az-pulsanti"><span class="esito" id="azEsitoC"></span>
+            <button class="btn" id="azIndietroC">No, indietro</button><button class="btn rosso pieno" id="azConfermaC">Sì, cancella</button></div>
+        </div>
+      </div>
+    </section>
+    <section class="agg-vista" id="aggVista">
+      <div class="form">
+        <h2><span>Nuova lavorazione</span></h2>
+        <div class="campo coppia">
+          <div><label for="fData">Data *</label><input type="date" id="fData"><div class="err" id="eData"></div></div>
+          <div><label for="fOra">Ora</label><input type="time" id="fOra"></div>
+        </div>
+        <div class="campo"><label for="fPrev">Rif. preventivo n°</label><input id="fPrev" placeholder="448" autocomplete="off"></div>
+        <div class="campo"><label for="fCliente">Nome cliente *</label><input id="fCliente" placeholder="Hotel Belvedere" autocomplete="off"><div class="err" id="eCliente"></div></div>
+        <div class="campo"><label for="fIndirizzo">Indirizzo</label><input id="fIndirizzo" placeholder="Via Savona 1, Milano" autocomplete="off"></div>
+        <div class="campo largo"><label>Tipo lavorazione *</label><div class="scelte" id="fTipi"></div><div class="err" id="eTipo"></div></div>
+        <div class="campo largo"><label>Priorità</label><div class="scelte" id="fPrio"></div></div>
+        <div class="campo largo"><label for="fNote">Note</label><textarea id="fNote" placeholder="Portare la scala lunga, citofonare al 2° piano…"></textarea></div>
+        <div class="azioni"><span class="esito" id="fEsito"></span>
+          <button class="btn" id="fAnnulla">Annulla</button><button class="btn pieno" id="fSalva">Aggiungi al calendario</button></div>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <div class="legenda" id="legenda"></div>
+    <div class="agg" id="agg"></div>
+  </footer>
+</div>
+
+<script>
+var CHIAVE = document.body.getAttribute('data-k');
+var PRIO = { 'alta':{nome:'Alta', c:'#ff5a5f', o:0}, 'media':{nome:'Media', c:'#f5b52e', o:1}, 'bassa':{nome:'Bassa', c:'#4cc96f', o:2} };
+var GRIGIO = '#5d6875';
+/* colore della scritta del tipo: Posa rosso, Ritiro verde, Consegna giallo; gli altri azzurro */
+var COLORE_TIPO = { 'posa':'#ff5a5f', 'ritiro':'#4cc96f', 'consegna':'#f5b52e' };
+function coloreTipo(l){ return COLORE_TIPO[String(l.tipo||'').trim().toLowerCase()] || 'var(--accent)'; }
+var GG = ['dom','lun','mar','mer','gio','ven','sab'];
+var GIORNI = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+var MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+
+var dati = null, mappa = {}, ultimo = '', giornoReso = '', aggiornato = null, errore = false, rafId = null;
+var meseAperto = false, meseScarto = 0, timerChiudi = null, giornoSel = null;
+var $ = function(id){ return document.getElementById(id); };
+
+function pr(l){ return PRIO[String(l.prio||'').trim().toLowerCase()] || PRIO.media; }
+function colore(l){ return l.fatto ? GRIGIO : pr(l).c; }
+function pad(n){ n = String(n); return n.length < 2 ? '0'+n : n; }
+function chiave(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function addG(d,n){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()+n); }
+function lun(d){ return addG(d, -((d.getDay()+6)%7)); }
+function daChiave(k){ var p = k.split('-'); return new Date(+p[0], p[1]-1, +p[2]); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function oraN(o){ var m = String(o||'').match(/(\d{1,2})[:.,](\d{2})/); return m ? pad(m[1])+':'+m[2] : ''; }
+function hm(d){ return pad(d.getHours())+':'+pad(d.getMinutes()); }
+function settIso(d){ var t = new Date(d.getFullYear(), d.getMonth(), d.getDate()+3-((d.getDay()+6)%7));
+  var g1 = new Date(t.getFullYear(),0,4); return 1+Math.round(((t-g1)/864e5-3+((g1.getDay()+6)%7))/7); }
+
+/* da fare prima dei fatti; poi priorità alta → bassa; poi per ora */
+function ordina(a,b){
+  return (a.fatto?1:0)-(b.fatto?1:0) || pr(a).o-pr(b).o || (a.oraN||'99').localeCompare(b.oraN||'99');
+}
+/* nasconde gli ultimi elementi che non ci stanno e mostra "+N" */
+function adatta(box, etich){
+  var items = box.querySelectorAll('.it'), piu = box.querySelector('.piu'), n = 0;
+  if (!piu) return;
+  piu.style.display = 'none';
+  for (var i = items.length-1; i >= 0 && box.scrollHeight > box.clientHeight+1; i--) {
+    items[i].style.display = 'none'; n++;
+    piu.textContent = '+' + n + etich; piu.style.display = '';
+  }
+}
+/* scorrimento lento di "oggi" quando le schede non ci stanno tutte */
+function scorri(wrap){
+  if (rafId) cancelAnimationFrame(rafId);
+  wrap.scrollTop = 0;
+  var pos = 0, attesa = performance.now() + 8000;
+  function f(t){
+    var m = wrap.scrollHeight - wrap.clientHeight;
+    if (m > 2 && t > attesa) {
+      if (pos < 0) { pos = 0; wrap.scrollTop = 0; attesa = t + 8000; }
+      else { pos = Math.min(pos + 0.5, m); wrap.scrollTop = pos; if (pos >= m) { pos = -1; attesa = t + 6000; } }
+    }
+    rafId = requestAnimationFrame(f);
+  }
+  rafId = requestAnimationFrame(f);
+}
+
+function card(l, rit){
+  var p = pr(l);
+  var quando = rit ? 'dal ' + daChiave(l.d).getDate() + ' ' + MESI[daChiave(l.d).getMonth()].slice(0,3) : l.oraN;
+  var etich = l.fatto ? '<span class="pill" style="background:#3ecf7a30;color:var(--ok)">✓ Fatto</span>'
+                      : '<span class="pill" style="background:'+p.c+'30;color:'+p.c+'">' + p.nome + '</span>';
+  return '<div class="card' + (l.fatto?' fatto':'') + '" data-i="' + l.idx + '" style="--c:'+colore(l)+'">' +
+    '<div class="su"><span class="tipo" style="color:' + coloreTipo(l) + '">' + esc(l.tipo || 'Lavorazione') + '</span>' +
+      (l.prev ? '<span class="prev">Prev. ' + esc(l.prev) + '</span>' : '') + '</div>' +
+    '<div class="cliente">' + esc(l.cliente) + '</div>' +
+    '<div class="indirizzo">' + (l.indirizzo ? esc(l.indirizzo) : '&nbsp;') + '</div>' +
+    (l.note ? '<div class="nota">' + esc(l.note) + '</div>' : '') +
+    '<div class="giu"><span class="quando' + (rit?' r':'') + '">' + esc(quando || '') + '</span>' + etich + '</div></div>';
+}
+function chip(l){
+  return '<div class="it chip' + (l.fatto?' fatto':'') + '" data-i="' + l.idx + '" style="--c:'+colore(l)+'">' +
+    '<div class="t1">' + (l.oraN ? '<span class="o">'+l.oraN+'</span> ' : '') + esc(l.cliente) + '</div>' +
+    '<div class="t2"><b style="color:' + coloreTipo(l) + '">' + esc(l.tipo || '') + '</b>' + (l.indirizzo ? ' · ' + esc(l.indirizzo) : '') + '</div>' +
+    (l.note ? '<div class="t3">' + esc(l.note) + '</div>' : '') + '</div>';
+}
+
+function render(){
+  if (!dati) return;
+  var oggi = new Date(), ko = chiave(oggi);
+  giornoReso = ko; mappa = {};
+  $('titolo').textContent = dati.titolo || 'Lavorazioni';
+  dati.lavori.forEach(function(l, i){ l.idx = i; l.oraN = oraN(l.ora); (mappa[l.d] = mappa[l.d] || []).push(l); });
+  Object.keys(mappa).forEach(function(k){ mappa[k].sort(ordina); });
+
+  /* ---- OGGI ---- */
+  var lista = mappa[ko] || [];
+  var ritardo = dati.lavori.filter(function(l){ return l.d < ko && !l.fatto; })
+    .sort(function(a,b){ return a.d < b.d ? -1 : a.d > b.d ? 1 : ordina(a,b); });
+  var h = '';
+  if (ritardo.length) h += '<div class="sez rit">Non ancora fatti · ' + ritardo.length + '</div>' +
+    ritardo.map(function(l){ return card(l, true); }).join('') + '<div class="sez">Oggi</div>';
+  h += lista.length ? lista.map(function(l){ return card(l); }).join('')
+                    : '<div class="vuoto">Nessuna lavorazione prevista per oggi</div>';
+  $('listaOggi').innerHTML = h;
+  var nFatti = lista.filter(function(l){ return l.fatto; }).length;
+  $('nOggi').textContent = lista.length;
+  $('contaOggi').textContent = lista.length ? ((lista.length - nFatti) + ' da fare · ' + nFatti + ' fatti') : '';
+  scorri($('scorriOggi'));
+
+  /* ---- SETTIMANA lun–ven (sabato e domenica mostrano la settimana dopo) ---- */
+  var base = (oggi.getDay() === 0 || oggi.getDay() === 6) ? addG(lun(oggi), 7) : oggi, l0 = lun(base);
+  var giorni = [0,1,2,3,4].map(function(i){ return addG(l0, i); }), ven = giorni[4];
+  $('nSett').textContent = giorni.reduce(function(n, d){ return n + (mappa[chiave(d)] || []).length; }, 0);
+  var pm = chiave(new Date(oggi.getFullYear(), oggi.getMonth(), 1)).slice(0,7);
+  $('nMeseBtn').textContent = dati.lavori.filter(function(l){ return l.d.slice(0,7) === pm; }).length;
+  $('titSett').textContent = (base === oggi ? '' : 'Prossima · ') + 'Sett. ' + settIso(l0) + ' · ' + l0.getDate() + ' ' +
+    MESI[l0.getMonth()].slice(0,3) + ' – ' + ven.getDate() + ' ' + MESI[ven.getMonth()].slice(0,3);
+  $('sett').innerHTML = giorni.map(function(d){
+    var k = chiave(d), a = mappa[k] || [];
+    var cls = k === ko ? ' oggi' : k < ko ? ' passato' : '';
+    return '<div class="giorno' + cls + '" data-k="' + k + '"><div class="tg"><span>' + GG[d.getDay()] + '</span><b>' + d.getDate() + '</b></div>' +
+      '<div class="box">' + (a.length ? a.map(chip).join('') : '<div class="niente">—</div>') + '<div class="piu"></div></div></div>';
+  }).join('');
+  [].forEach.call(document.querySelectorAll('#sett .box'), function(b){ adatta(b, ' altri'); });
+
+  if (meseAperto) renderMese();
+  if (giornoSel) renderGiorno();
+}
+
+function renderGiorno(){
+  var d = daChiave(giornoSel), a = mappa[giornoSel] || [], ko = chiave(new Date());
+  $('titGiorno').textContent = GIORNI[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()] + ' ' + d.getFullYear() +
+    (giornoSel === ko ? ' · oggi' : '');
+  var nFatti = a.filter(function(l){ return l.fatto; }).length;
+  $('contaGiorno').textContent = a.length ? ((a.length - nFatti) + ' da fare · ' + nFatti + ' fatti') : '';
+  $('listaGiorno').innerHTML = a.length ? a.map(function(l){ return card(l); }).join('')
+                                        : '<div class="vuoto">Nessuna lavorazione in questo giorno</div>';
+}
+function apriGiorno(k){
+  giornoSel = k; renderGiorno();
+  $('giornoVista').className = 'pannello giorno-vista aperta';
+  rinviaChiusura();
+}
+function chiudiGiorno(){
+  giornoSel = null;
+  $('giornoVista').className = 'pannello giorno-vista';
+  if (meseAperto) rinviaChiusura(); else clearTimeout(timerChiudi);
+}
+/* ‹ › passano al giorno lavorativo precedente o successivo (salta sabato e domenica) */
+function spostaGiorno(n){
+  var d = daChiave(giornoSel);
+  do { d = addG(d, n); } while (d.getDay() === 0 || d.getDay() === 6);
+  giornoSel = chiave(d); renderGiorno(); rinviaChiusura();
+}
+
+function renderMese(){
+  var oggi = new Date(), ko = chiave(oggi);
+  var rif = new Date(oggi.getFullYear(), oggi.getMonth() + meseScarto, 1);
+  var u = new Date(rif.getFullYear(), rif.getMonth()+1, 0);
+  var start = lun(rif), nSett = Math.round(((lun(u) - start) / 864e5) / 7) + 1, tot = 0;
+  $('titMese').textContent = MESI[rif.getMonth()] + ' ' + rif.getFullYear();
+  var m = ['lun','mar','mer','gio','ven','sab','dom'].map(function(g){ return '<div class="gs">'+g+'</div>'; }).join('');
+  for (var j = 0; j < nSett*7; j++) {
+    var dd = addG(start, j), kk = chiave(dd), aa = mappa[kk] || [];
+    var fuori = dd.getMonth() !== rif.getMonth();
+    if (!fuori) tot += aa.length;
+    var c = fuori ? ' fuori' : kk === ko ? ' oggi' : kk < ko ? ' passato' : '';
+    m += '<div class="cella' + c + '" data-k="' + kk + '"><div class="n"><span>' + dd.getDate() + '</span>' + (aa.length ? '<i>' + aa.length + '</i>' : '') + '</div>' +
+      '<div class="box">' + aa.map(function(l){
+        return '<div class="it mi' + (l.fatto?' fatto':'') + '" data-i="' + l.idx + '"><span class="dot" style="background:'+colore(l)+'"></span>' +
+          (l.oraN ? '<span class="o">'+l.oraN+'</span> ' : '') + esc(l.cliente) + ' · <span style="color:' + (l.fatto ? 'inherit' : coloreTipo(l)) + '">' + esc(l.tipo || '') + '</span></div>';
+      }).join('') + '<div class="piu"></div></div></div>';
+  }
+  $('mese').style.gridTemplateRows = 'auto repeat(' + nSett + ',1fr)';
+  $('mese').innerHTML = m;
+  $('nMese').textContent = tot;
+  $('contaMese').textContent = '';
+  [].forEach.call(document.querySelectorAll('#mese .box'), function(b){ adatta(b, ''); });
+}
+
+/* mese e giorno si chiudono da soli dopo 2 minuti, così la TV torna sempre su oggi e settimana
+   (non mentre si sta compilando il modulo Aggiungi) */
+function rinviaChiusura(){ clearTimeout(timerChiudi); if (window.innerWidth <= 760) return; timerChiudi = setTimeout(function(){ if (aggAperto || azAperto) return; chiudiGiorno(); apriMese(false); }, 120000); }
+function apriMese(si){
+  meseAperto = si; if (si) meseScarto = 0;
+  $('meseVista').className = 'pannello mese-vista' + (si ? ' aperta' : '');
+  $('btnMese').className = 'btn' + (si ? ' on' : '');
+  $('btnMeseTxt').textContent = si ? 'Oggi e settimana' : 'Mese';
+  $('nMeseBtn').style.display = si ? 'none' : '';
+  if (si) { renderMese(); rinviaChiusura(); } else clearTimeout(timerChiudi);
+}
+function spostaMese(n){ meseScarto += n; renderMese(); rinviaChiusura(); }
+$('btnMese').onclick = function(){ if (giornoSel) chiudiGiorno(); apriMese(!meseAperto); };
+$('mChiudi').onclick = function(){ apriMese(false); };
+$('mPrima').onclick = function(){ spostaMese(-1); };
+$('mDopo').onclick = function(){ spostaMese(1); };
+$('gChiudi').onclick = chiudiGiorno;
+$('gPrima').onclick = function(){ spostaGiorno(-1); };
+$('gDopo').onclick = function(){ spostaGiorno(1); };
+/* clic su un giorno della settimana o su una casella del mese: apre la pagina di quel giorno */
+function clicGiorno(e){
+  var lav = e.target.closest('[data-i]');
+  if (lav) { apriAzione(+lav.getAttribute('data-i')); return; }
+  var el = e.target.closest('[data-k]'); if (el) apriGiorno(el.getAttribute('data-k'));
+}
+function clicLavoro(e){ var lav = e.target.closest('[data-i]'); if (lav) apriAzione(+lav.getAttribute('data-i')); }
+$('listaOggi').onclick = clicLavoro;
+$('listaGiorno').onclick = clicLavoro;
+$('sett').onclick = clicGiorno;
+$('mese').onclick = clicGiorno;
+/* ---- AGGIUNGI dalla pagina ---- */
+var TIPI = ['Sopralluogo','Campioni','Posa','Consegna','Ritiro','Spedizione','Promemoria'];
+var aggTipo = '', aggPrio = 'Media', aggAperto = false;
+TIPI.forEach(function(t){
+  var b = document.createElement('button'); b.type = 'button'; b.className = 'scelta'; b.textContent = t;
+  b.style.setProperty('--c', COLORE_TIPO[t.toLowerCase()] || 'var(--accent)');
+  b.onclick = function(){ aggTipo = t; [].forEach.call($('fTipi').children, function(c){ c.classList.remove('on'); }); b.classList.add('on'); $('eTipo').textContent = ''; };
+  $('fTipi').appendChild(b);
+});
+['alta','media','bassa'].forEach(function(k){
+  var p = PRIO[k], b = document.createElement('button'); b.type = 'button'; b.className = 'scelta';
+  b.style.setProperty('--c', p.c);
+  b.innerHTML = '<i class="dot" style="background:'+p.c+';margin:0"></i>' + p.nome;
+  b.onclick = function(){ aggPrio = p.nome; [].forEach.call($('fPrio').children, function(c){ c.classList.remove('on'); }); b.classList.add('on'); };
+  $('fPrio').appendChild(b);
+});
+function apriAggiungi(){
+  aggAperto = true; clearTimeout(timerChiudi);
+  $('fData').value = giornoSel || chiave(new Date());
+  ['fOra','fCliente','fIndirizzo','fPrev','fNote'].forEach(function(id){ $(id).value = ''; });
+  ['eData','eCliente','eTipo','fEsito'].forEach(function(id){ $(id).textContent = ''; });
+  aggTipo = ''; [].forEach.call($('fTipi').children, function(c){ c.classList.remove('on'); });
+  $('fPrio').children[1].click();
+  $('fSalva').disabled = false;
+  $('aggVista').className = 'agg-vista aperta';
+  setTimeout(function(){ $('fCliente').focus(); }, 50);
+}
+function chiudiAggiungi(){
+  aggAperto = false; $('aggVista').className = 'agg-vista';
+  if (giornoSel || meseAperto) rinviaChiusura();
+}
+function salvaAggiungi(){
+  var ok = true;
+  if (!$('fData').value) { $('eData').textContent = 'Scegli una data'; ok = false; }
+  if (!$('fCliente').value.trim()) { $('eCliente').textContent = 'Scrivi il nome del cliente'; ok = false; }
+  if (!aggTipo) { $('eTipo').textContent = 'Scegli il tipo di lavorazione'; ok = false; }
+  if (!ok) return;
+  var l = { data:$('fData').value, ora:$('fOra').value, cliente:$('fCliente').value, indirizzo:$('fIndirizzo').value,
+            tipo:aggTipo, preventivo:$('fPrev').value, priorita:aggPrio, note:$('fNote').value };
+  $('fSalva').disabled = true; $('fEsito').className = 'esito'; $('fEsito').textContent = 'Salvataggio…';
+  google.script.run
+    .withSuccessHandler(function(){
+      $('fEsito').className = 'esito ok'; $('fEsito').textContent = '✓ Aggiunta: ' + l.cliente.trim() + ' – ' + l.tipo;
+      carica(); setTimeout(chiudiAggiungi, 1500);
+    })
+    .withFailureHandler(function(e){
+      $('fSalva').disabled = false; $('fEsito').className = 'esito ko';
+      $('fEsito').textContent = (e && e.message) || 'Non salvata, riprova.';
+    })
+    .aggiungiDaTv(CHIAVE, l);
+}
+/* ---- SPOSTA / CANCELLA un lavoro ---- */
+var azAperto = false, azLav = null;
+function passoAz(quale){
+  $('azScelta').style.display = quale === 'scelta' ? '' : 'none';
+  $('azPassoSposta').style.display = quale === 'sposta' ? '' : 'none';
+  $('azPassoCancella').style.display = quale === 'cancella' ? '' : 'none';
+}
+function apriAzione(i){
+  var l = dati && dati.lavori[i]; if (!l) return;
+  azLav = { r:l.r, d:l.d, cliente:l.cliente, tipo:l.tipo, ora:l.oraN };
+  var d = daChiave(l.d);
+  $('azTipo').textContent = l.tipo || 'Lavorazione';
+  $('azTipo').style.color = coloreTipo(l);
+  $('azCliente').textContent = l.cliente;
+  $('azQuando').textContent = GIORNI[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()] + (l.oraN ? ' · ore ' + l.oraN : '') +
+    (l.indirizzo ? ' · ' + l.indirizzo : '');
+  $('azData').value = l.d; $('azOra').value = l.oraN || '';
+  ['azEsitoS','azEsitoC'].forEach(function(id){ $(id).textContent = ''; $(id).className = 'esito'; });
+  $('azConfermaS').disabled = false; $('azConfermaC').disabled = false;
+  passoAz('scelta');
+  azAperto = true; $('azVista').className = 'az-vista aperta';
+  clearTimeout(timerChiudi);
+}
+function chiudiAzione(){
+  azAperto = false; azLav = null; $('azVista').className = 'az-vista';
+  if (giornoSel || meseAperto) rinviaChiusura();
+}
+function esitoAz(id, ok, testo){ $(id).className = 'esito ' + (ok ? 'ok' : 'ko'); $(id).textContent = testo; }
+function confermaSposta(){
+  var nd = $('azData').value;
+  if (!nd) { esitoAz('azEsitoS', false, 'Scegli una data'); return; }
+  $('azConfermaS').disabled = true; $('azEsitoS').className = 'esito'; $('azEsitoS').textContent = 'Spostamento…';
+  google.script.run
+    .withSuccessHandler(function(){
+      var d = daChiave(nd);
+      esitoAz('azEsitoS', true, '✓ Spostato a ' + GIORNI[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()]);
+      carica(); setTimeout(chiudiAzione, 1300);
+    })
+    .withFailureHandler(function(e){ $('azConfermaS').disabled = false; esitoAz('azEsitoS', false, (e && e.message) || 'Non spostato, riprova.'); })
+    .spostaDaTv(CHIAVE, azLav, nd, $('azOra').value);
+}
+function confermaCancella(){
+  $('azConfermaC').disabled = true; $('azEsitoC').className = 'esito'; $('azEsitoC').textContent = 'Cancellazione…';
+  google.script.run
+    .withSuccessHandler(function(){ esitoAz('azEsitoC', true, '✓ Cancellato'); carica(); setTimeout(chiudiAzione, 1100); })
+    .withFailureHandler(function(e){ $('azConfermaC').disabled = false; esitoAz('azEsitoC', false, (e && e.message) || 'Non cancellato, riprova.'); })
+    .cancellaDaTv(CHIAVE, azLav);
+}
+$('azSposta').onclick = function(){ passoAz('sposta'); setTimeout(function(){ $('azData').focus(); }, 30); };
+$('azCancella').onclick = function(){ passoAz('cancella'); };
+$('azChiudi').onclick = chiudiAzione;
+$('azIndietroS').onclick = function(){ passoAz('scelta'); };
+$('azIndietroC').onclick = function(){ passoAz('scelta'); };
+$('azConfermaS').onclick = confermaSposta;
+$('azConfermaC').onclick = confermaCancella;
+$('azVista').onclick = function(e){ if (e.target === $('azVista')) chiudiAzione(); };
+
+$('btnAggiungi').onclick = apriAggiungi;
+$('fAnnulla').onclick = chiudiAggiungi;
+$('fSalva').onclick = salvaAggiungi;
+$('fData').oninput = function(){ $('eData').textContent = ''; };
+$('fCliente').oninput = function(){ $('eCliente').textContent = ''; };
+
+document.addEventListener('keydown', function(e){
+  var indietro = e.key === 'Escape' || e.key === 'Backspace' || e.key === 'GoBack';
+  if (azAperto) { if (e.key === 'Escape') chiudiAzione(); return; }
+  if (aggAperto) {                       /* mentre si scrive, i tasti rapidi sono spenti */
+    if (e.key === 'Escape') chiudiAggiungi();
+    return;
+  }
+  if (e.key === 'a' || e.key === 'A') apriAggiungi();
+  else if (e.key === 'm' || e.key === 'M') { if (giornoSel) chiudiGiorno(); apriMese(!meseAperto); }
+  else if (giornoSel && indietro) { chiudiGiorno(); e.preventDefault(); }
+  else if (giornoSel && e.key === 'ArrowLeft') spostaGiorno(-1);
+  else if (giornoSel && e.key === 'ArrowRight') spostaGiorno(1);
+  else if (meseAperto && indietro) { apriMese(false); e.preventDefault(); }
+  else if (meseAperto && e.key === 'ArrowLeft') spostaMese(-1);
+  else if (meseAperto && e.key === 'ArrowRight') spostaMese(1);
+});
+
+function piede(){
+  var a = $('agg');
+  if (errore) { a.className = 'agg err'; a.textContent = '⚠ Connessione persa' + (aggiornato ? ' · ultimo aggiornamento ' + hm(aggiornato) : ''); }
+  else { a.className = 'agg'; a.textContent = aggiornato ? 'Aggiornato alle ' + hm(aggiornato) : ''; }
+}
+function carica(){
+  google.script.run
+    .withSuccessHandler(function(d){
+      errore = false; aggiornato = new Date();
+      var s = JSON.stringify(d);
+      if (s !== ultimo) { ultimo = s; dati = d; render(); }
+      piede();
+    })
+    .withFailureHandler(function(){ errore = true; piede();
+      if (!dati) $('listaOggi').innerHTML = '<div class="vuoto">Impossibile leggere il foglio. Riprovo tra un minuto…</div>'; })
+    .getDati(CHIAVE);
+}
+function orologio(){
+  var n = new Date();
+  $('ora').textContent = hm(n);
+  $('data').textContent = GIORNI[n.getDay()] + ' ' + n.getDate() + ' ' + MESI[n.getMonth()] + ' ' + n.getFullYear();
+  if (dati && chiave(n) !== giornoReso) render();   // cambio di giorno a mezzanotte
+}
+
+$('legenda').innerHTML = ['alta','media','bassa'].map(function(k){
+    return '<span><i class="dot" style="background:'+PRIO[k].c+'"></i>Priorità ' + PRIO[k].nome.toLowerCase() + '</span>'; }).join('') +
+  '<span><i class="dot" style="background:'+GRIGIO+'"></i>Fatto</span><span>Clic su un lavoro per spostarlo o cancellarlo · clic su un giorno per aprirlo</span>';
+orologio(); setInterval(orologio, 1000);
+carica(); setInterval(carica, 60000);
+var tR; window.addEventListener('resize', function(){ clearTimeout(tR); tR = setTimeout(render, 300); });
+</script>
+</body>
+</html>
