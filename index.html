@@ -41,7 +41,9 @@ h2 .conta{letter-spacing:.01em;text-transform:none;color:var(--dim);font-weight:
 .sez{grid-column:1/-1;font-size:.85vw;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-top:.2vw}
 .sez.rit{color:var(--alta)}
 .card{display:flex;flex-direction:column;background:var(--panel2);border-radius:.6vw;border-top:.45vw solid var(--c);padding:.8vw 1vw .9vw;min-width:0}
-.card.fatto{opacity:.4}
+.card.fatto{background:#123b24;box-shadow:inset 0 0 0 .12vw #2ecc7166}
+.card.fatto .tipo,.card.fatto .prev,.card.fatto .indirizzo{color:#8fe3b0!important}
+.card.fatto:hover{background:#174a2d}
 .card .su{display:flex;justify-content:space-between;align-items:baseline;gap:.6vw}
 .tipo{font-size:.95vw;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
 .prev{font-size:.85vw;color:var(--dim);font-weight:600}
@@ -66,7 +68,20 @@ h2 .conta{letter-spacing:.01em;text-transform:none;color:var(--dim);font-weight:
 .giorno.oggi .tg, .giorno.oggi .tg b{color:var(--accent)}
 .box{flex:1;min-height:0;overflow:hidden}
 .chip{background:var(--bg);border-left:.35vw solid var(--c);border-radius:.35vw;padding:.45vw .6vw;margin-bottom:.45vw}
-.chip.fatto{opacity:.35}
+.spunta{display:inline-flex;align-items:center;gap:.4vw;font-size:.85vw;font-weight:800;color:var(--dim);cursor:pointer;
+  padding:.15vw .3vw;border-radius:.35vw;user-select:none}
+.spunta:hover{background:#ffffff14}
+.spunta .q{width:1.35vw;height:1.35vw;border:.13vw solid var(--dim);border-radius:.28vw;display:inline-flex;align-items:center;
+  justify-content:center;font-size:1vw;line-height:1;color:transparent}
+.spunta.on{color:var(--ok)}
+.spunta.on .q{background:var(--ok);border-color:var(--ok);color:#06210f}
+.card .destra{display:flex;align-items:center;gap:.6vw}
+.chip{position:relative;padding-right:3.4vw}
+.chip .spunta{position:absolute;right:.25vw;top:50%;transform:translateY(-50%);flex-direction:column;gap:.1vw;font-size:.62vw;padding:.15vw}
+.chip .spunta .q{width:1.15vw;height:1.15vw;font-size:.85vw}
+.chip.fatto{background:#123b24}
+.chip.fatto .t2,.chip.fatto .t2 b{color:#8fe3b0!important}
+.chip.fatto:hover{background:#174a2d}
 .chip .t1{font-size:1.1vw;font-weight:700}
 .chip .t1 .o{color:var(--accent);font-variant-numeric:tabular-nums}
 .chip .t2{font-size:.9vw;color:var(--dim);margin-top:.15vw}
@@ -89,7 +104,7 @@ h2 .conta{letter-spacing:.01em;text-transform:none;color:var(--dim);font-weight:
 .cella .n i{font-style:normal;font-size:.8vw;color:var(--dim);font-weight:700}
 .mi{font-size:.85vw;line-height:1.4}
 .mi .o{color:var(--accent);font-variant-numeric:tabular-nums}
-.mi.fatto{color:var(--faint);text-decoration:line-through}
+.mi.fatto{color:#8fe3b0;background:#123b24;border-radius:.2vw}
 .cella .piu{font-size:.75vw;padding:0}
 
 /* GIORNO: pagina di un singolo giorno, si apre cliccando un giorno della settimana o del mese */
@@ -195,6 +210,12 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   .piu{font-size:12px}
   .niente{font-size:13px;padding:2px 0;text-align:left}
   .dot{width:8px;height:8px;margin-right:4px}
+  .spunta{font-size:12px;gap:6px;padding:4px}
+  .spunta .q{width:24px;height:24px;font-size:17px;border-width:2px;border-radius:5px}
+  .card .destra{gap:8px}
+  .chip{padding-right:56px}
+  .chip .spunta{right:6px;font-size:10px;gap:2px}
+  .chip .spunta .q{width:22px;height:22px;font-size:15px}
   /* mese, giorno, aggiungi e azioni: a tutto schermo, da scorrere */
   .mese-vista,.giorno-vista,.agg-vista{position:fixed;inset:0;border-radius:0;overflow:auto;padding:14px 12px}
   .mese-vista.aperta,.giorno-vista.aperta,.agg-vista.aperta{display:block}
@@ -237,7 +258,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   var API = 'https://script.google.com/macros/s/AKfycbzOq5uRLYzRQ0vYWyZLhWh-01LlQS_ZQgGwBj5Ap1vGCBuv0ht3Uvu76kKVmTZVqAsx9Q/exec';
   var m = (location.hash + '&' + location.search).match(/[#?&]k=([A-Za-z0-9]+)/);
   document.body.setAttribute('data-k', m ? m[1] : '');
-  var FUNZIONI = ['getDati', 'aggiungiDaTv', 'spostaDaTv', 'cancellaDaTv'];
+  var FUNZIONI = ['getDati', 'aggiungiDaTv', 'spostaDaTv', 'cancellaDaTv', 'fattoDaTv'];
   function nuovoRunner(){
     var ok = null, ko = null, r = {};
     r.withSuccessHandler = function(f){ ok = f; return r; };
@@ -348,6 +369,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
 var CHIAVE = document.body.getAttribute('data-k');
 var PRIO = { 'alta':{nome:'Alta', c:'#ff5a5f', o:0}, 'media':{nome:'Media', c:'#f5b52e', o:1}, 'bassa':{nome:'Bassa', c:'#4cc96f', o:2} };
 var GRIGIO = '#5d6875';
+var VERDE = '#2ecc71';   /* lavori fatti */
 /* colore della scritta del tipo: Posa rosso, Ritiro verde, Consegna giallo; gli altri azzurro */
 var COLORE_TIPO = { 'posa':'#ff5a5f', 'ritiro':'#4cc96f', 'consegna':'#f5b52e' };
 function coloreTipo(l){ return COLORE_TIPO[String(l.tipo||'').trim().toLowerCase()] || 'var(--accent)'; }
@@ -360,7 +382,7 @@ var meseAperto = false, meseScarto = 0, timerChiudi = null, giornoSel = null;
 var $ = function(id){ return document.getElementById(id); };
 
 function pr(l){ return PRIO[String(l.prio||'').trim().toLowerCase()] || PRIO.media; }
-function colore(l){ return l.fatto ? GRIGIO : pr(l).c; }
+function colore(l){ return l.fatto ? VERDE : pr(l).c; }
 function pad(n){ n = String(n); return n.length < 2 ? '0'+n : n; }
 function chiave(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
 function addG(d,n){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()+n); }
@@ -405,8 +427,8 @@ function scorri(wrap){
 function card(l, rit){
   var p = pr(l);
   var quando = rit ? 'dal ' + daChiave(l.d).getDate() + ' ' + MESI[daChiave(l.d).getMonth()].slice(0,3) : l.oraN;
-  var etich = l.fatto ? '<span class="pill" style="background:#3ecf7a30;color:var(--ok)">✓ Fatto</span>'
-                      : '<span class="pill" style="background:'+p.c+'30;color:'+p.c+'">' + p.nome + '</span>';
+  var etich = '<span class="destra"><span class="pill" style="background:'+p.c+'30;color:'+p.c+'">' + p.nome + '</span>' +
+    spunta(l) + '</span>';
   return '<div class="card' + (l.fatto?' fatto':'') + '" data-i="' + l.idx + '" style="--c:'+colore(l)+'">' +
     '<div class="su"><span class="tipo" style="color:' + coloreTipo(l) + '">' + esc(l.tipo || 'Lavorazione') + '</span>' +
       (l.prev ? '<span class="prev">Prev. ' + esc(l.prev) + '</span>' : '') + '</div>' +
@@ -415,11 +437,14 @@ function card(l, rit){
     (l.note ? '<div class="nota">' + esc(l.note) + '</div>' : '') +
     '<div class="giu"><span class="quando' + (rit?' r':'') + '">' + esc(quando || '') + '</span>' + etich + '</div></div>';
 }
+function spunta(l){
+  return '<span class="spunta' + (l.fatto ? ' on' : '') + '" data-f="' + l.idx + '" title="Segna come fatto">Fatt.<span class="q">✓</span></span>';
+}
 function chip(l){
   return '<div class="it chip' + (l.fatto?' fatto':'') + '" data-i="' + l.idx + '" style="--c:'+colore(l)+'">' +
     '<div class="t1">' + (l.oraN ? '<span class="o">'+l.oraN+'</span> ' : '') + esc(l.cliente) + '</div>' +
     '<div class="t2"><b style="color:' + coloreTipo(l) + '">' + esc(l.tipo || '') + '</b>' + (l.indirizzo ? ' · ' + esc(l.indirizzo) : '') + '</div>' +
-    (l.note ? '<div class="t3">' + esc(l.note) + '</div>' : '') + '</div>';
+    (l.note ? '<div class="t3">' + esc(l.note) + '</div>' : '') + spunta(l) + '</div>';
 }
 
 function render(){
@@ -537,11 +562,12 @@ $('gPrima').onclick = function(){ spostaGiorno(-1); };
 $('gDopo').onclick = function(){ spostaGiorno(1); };
 /* clic su un giorno della settimana o su una casella del mese: apre la pagina di quel giorno */
 function clicGiorno(e){
+  if (clicSpunta(e)) return;
   var lav = e.target.closest('[data-i]');
   if (lav) { apriAzione(+lav.getAttribute('data-i')); return; }
   var el = e.target.closest('[data-k]'); if (el) apriGiorno(el.getAttribute('data-k'));
 }
-function clicLavoro(e){ var lav = e.target.closest('[data-i]'); if (lav) apriAzione(+lav.getAttribute('data-i')); }
+function clicLavoro(e){ if (clicSpunta(e)) return; var lav = e.target.closest('[data-i]'); if (lav) apriAzione(+lav.getAttribute('data-i')); }
 $('listaOggi').onclick = clicLavoro;
 $('listaGiorno').onclick = clicLavoro;
 $('sett').onclick = clicGiorno;
@@ -597,6 +623,27 @@ function salvaAggiungi(){
     })
     .aggiungiDaTv(CHIAVE, l);
 }
+/* ---- FATT.: spunta veloce dalla TV ---- */
+function clicSpunta(e){
+  var el = e.target.closest('[data-f]'); if (!el) return false;
+  e.stopPropagation();
+  var l = dati && dati.lavori[+el.getAttribute('data-f')]; if (!l) return true;
+  var nuovo = !l.fatto, j = { r:l.r, d:l.d, cliente:l.cliente };
+  l.fatto = nuovo; render();                       /* si vede subito, poi si salva */
+  google.script.run
+    .withSuccessHandler(function(){ carica(); })
+    .withFailureHandler(function(err){
+      l.fatto = !nuovo; render();
+      alertBreve((err && err.message) || 'Non salvato, riprova.');
+    })
+    .fattoDaTv(CHIAVE, j, nuovo);
+  return true;
+}
+function alertBreve(t){
+  var a = $('agg'); a.className = 'agg err'; a.textContent = '⚠ ' + t;
+  setTimeout(piede, 6000);
+}
+
 /* ---- SPOSTA / CANCELLA un lavoro ---- */
 var azAperto = false, azLav = null;
 function passoAz(quale){
@@ -703,7 +750,7 @@ function orologio(){
 
 $('legenda').innerHTML = ['alta','media','bassa'].map(function(k){
     return '<span><i class="dot" style="background:'+PRIO[k].c+'"></i>Priorità ' + PRIO[k].nome.toLowerCase() + '</span>'; }).join('') +
-  '<span><i class="dot" style="background:'+GRIGIO+'"></i>Fatto</span><span>Clic su un lavoro per spostarlo o cancellarlo · clic su un giorno per aprirlo</span>';
+  '<span><i class="dot" style="background:'+VERDE+'"></i>Fatto</span><span>Clic su un lavoro per spostarlo o cancellarlo · clic su un giorno per aprirlo</span>';
 orologio(); setInterval(orologio, 1000);
 carica(); setInterval(carica, 60000);
 var tR; window.addEventListener('resize', function(){ clearTimeout(tR); tR = setTimeout(render, 300); });
