@@ -58,6 +58,7 @@ h2 .conta{letter-spacing:.01em;text-transform:none;color:var(--dim);font-weight:
 .vuoto{grid-column:1/-1;color:var(--faint);font-size:1.3vw;padding:2.5vw 0;text-align:center}
 
 /* SETTIMANA lun–ven */
+.sett-tit,.btn.altre{display:none}
 .sett{flex:1;min-height:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.7vw}
 .giorno{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--panel2);border-radius:.5vw;padding:.6vw}
 .giorno.passato{opacity:.5}
@@ -203,6 +204,8 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   .pill{font-size:11px;padding:3px 9px}
   .vuoto{font-size:15px;padding:18px 0}
   .sett{display:flex;flex-direction:column;gap:10px}
+  .sett-tit{display:block;font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:14px 2px 0}
+  .btn.altre{display:block;width:100%;margin-top:6px}
   .giorno{padding:10px;border-radius:10px}
   .tg{font-size:13px;margin-bottom:8px}
   .tg b{font-size:18px}
@@ -383,7 +386,7 @@ var GIORNI = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì'
 var MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
 
 var dati = null, mappa = {}, ultimo = '', giornoReso = '', aggiornato = null, errore = false, rafId = null;
-var meseAperto = false, meseScarto = 0, timerChiudi = null, giornoSel = null;
+var meseAperto = false, meseScarto = 0, timerChiudi = null, giornoSel = null, settTelefono = 4;
 var $ = function(id){ return document.getElementById(id); };
 
 function pr(l){ return PRIO[String(l.prio||'').trim().toLowerCase()] || PRIO.media; }
@@ -483,12 +486,25 @@ function render(){
   $('nMeseBtn').textContent = dati.lavori.filter(function(l){ return l.d.slice(0,7) === pm; }).length;
   $('titSett').textContent = (base === oggi ? '' : 'Prossima · ') + 'Sett. ' + settIso(l0) + ' · ' + l0.getDate() + ' ' +
     MESI[l0.getMonth()].slice(0,3) + ' – ' + ven.getDate() + ' ' + MESI[ven.getMonth()].slice(0,3);
-  $('sett').innerHTML = giorni.map(function(d){
+  function colonnaGiorno(d){
     var k = chiave(d), a = mappa[k] || [];
     var cls = k === ko ? ' oggi' : k < ko ? ' passato' : '';
     return '<div class="giorno' + cls + '" data-k="' + k + '"><div class="tg"><span>' + GG[d.getDay()] + '</span><b>' + d.getDate() + '</b></div>' +
       '<div class="box">' + (a.length ? a.map(chip).join('') : '<div class="niente">—</div>') + '<div class="piu"></div></div></div>';
-  }).join('');
+  }
+  var h = giorni.map(colonnaGiorno).join('');
+  /* sul telefono la settimana non si ferma al venerdì: scorrendo seguono le settimane successive */
+  if (window.innerWidth <= 760) {
+    for (var w = 1; w < settTelefono; w++) {
+      var lw = addG(l0, 7 * w), vw = addG(lw, 4);
+      h += '<div class="sett-tit">Sett. ' + settIso(lw) + ' · ' + lw.getDate() + ' ' + MESI[lw.getMonth()].slice(0,3) +
+        ' – ' + vw.getDate() + ' ' + MESI[vw.getMonth()].slice(0,3) + '</div>';
+      h += [0,1,2,3,4].map(function(i){ return colonnaGiorno(addG(lw, i)); }).join('');
+    }
+    h += '<button class="btn altre" id="btnAltre">Mostra altre settimane</button>';
+  }
+  $('sett').innerHTML = h;
+  if ($('btnAltre')) $('btnAltre').onclick = function(e){ e.stopPropagation(); settTelefono += 4; render(); };
   [].forEach.call(document.querySelectorAll('#sett .box'), function(b){ adatta(b, ' altri'); });
 
   if (meseAperto) renderMese();
