@@ -345,13 +345,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107230050';
+  var VERSIONE = '20261107230404';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107230050') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107230404') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -536,7 +536,7 @@ function card(l, rit){
   var p = pr(l);
   var quando = rit ? 'dal ' + daChiave(l.d).getDate() + ' ' + MESI[daChiave(l.d).getMonth()].slice(0,3) : '';   /* l'ora va in alto a sinistra */
   /* ora, poi sulla stessa riga tempo stimato, viaggio e persone; la priorità si vede dal colore della barra */
-  var tempi = [tempoTxt(l), l.pers ? '👥 ' + l.pers : ''].filter(Boolean).join(' · ');
+  var tempi = [tempoTxt(l), omini(l.pers)].filter(Boolean).join(' · ');
   var etich = '<span class="destra">' + spunta(l) + '</span>';
   return '<div class="card' + (l.fatto?' fatto':'') + '" data-i="' + l.idx + '" style="--c:'+colore(l)+'">' +
     '<div class="su"><span class="ti">' + (l.oraN ? '<span class="ora-c">' + l.oraN + '</span>' : '') +
@@ -635,6 +635,8 @@ var ORE_TIPO = { 'posa':4, 'consegna':1, 'campioni':1, 'sopralluogo':0.5, 'ritir
 var PERSONE_TIPO = { 'posa':2 };
 /* "⏱ 2 h · 🚐 00:40": tempo stimato e, separato, il viaggio andata e ritorno (calcolato da Google Maps dalla sede) */
 function viaggioTxt(min){ min = Math.round(Number(min) || 0); return '🚐 ' + pad(Math.floor(min / 60)) + ':' + pad(min % 60); }
+/* una sagoma per ogni persona necessaria */
+function omini(n){ n = Math.min(Math.max(parseInt(n, 10) || 0, 0), 8); return n ? new Array(n + 1).join('👤') : ''; }
 function tempoTxt(l){ return [l.stima ? '⏱ ' + oreTxt(l.stima) : '', l.viaggio ? viaggioTxt(l.viaggio) : ''].filter(Boolean).join(' · '); }
 function oreLavoro(l){ var n = Number(l.stima); if (n > 0) return n; var t = String(l.tipo || '').trim().toLowerCase(); return ORE_TIPO.hasOwnProperty(t) ? ORE_TIPO[t] : 1; }
 function personeLavoro(l){ var n = Number(l.pers); if (n > 0) return n; return PERSONE_TIPO[String(l.tipo || '').trim().toLowerCase()] || 1; }
@@ -935,7 +937,7 @@ function apriAzione(i){
   $('azTipo').style.color = coloreTipo(l);
   $('azCliente').textContent = l.cliente;
   $('azQuando').textContent = GIORNI[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()] + (l.oraN ? ' · ore ' + l.oraN : '') +
-    (l.stima || l.viaggio ? ' · ' + tempoTxt(l) : '') + (l.pers ? ' · 👥 ' + l.pers + (l.pers == 1 ? ' persona' : ' persone') : '') +
+    (l.stima || l.viaggio ? ' · ' + tempoTxt(l) : '') + (l.pers ? ' · ' + omini(l.pers) + ' ' + l.pers + (l.pers == 1 ? ' persona' : ' persone') : '') +
     (l.indirizzo ? ' · ' + l.indirizzo : '');
   $('azData').value = l.d; $('azOra').value = l.oraN || '';
   ['azEsitoS','azEsitoC','azEsitoF'].forEach(function(id){ $(id).textContent = ''; $(id).className = 'esito'; });
