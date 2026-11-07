@@ -116,6 +116,10 @@ h2 .conta{letter-spacing:.01em;text-transform:none;color:var(--dim);font-weight:
 .fatt-vista.aperta{display:flex}
 .fatt-vista .scorri{overflow:auto}
 .fatt-vista h2 .nav{display:flex;gap:.8vw;align-items:center}
+.cerca-in{flex:1;min-width:0;margin:0 1vw;font:inherit;font-size:max(15px,1.2vw);color:var(--txt);background:var(--panel2);
+  border:.1vw solid #2c3744;border-radius:.5vw;padding:.5vw .8vw;outline:none;text-transform:none;letter-spacing:0}
+.cerca-in:focus{border-color:var(--accent)}
+#cercaVista h2{align-items:center}
 .giorno, .cella{cursor:pointer}
 .giorno:hover, .cella:hover{box-shadow:inset 0 0 0 .12vw var(--dim)}
 .giorno.oggi:hover, .cella.oggi:hover{box-shadow:inset 0 0 0 .15vw var(--accent)}
@@ -145,6 +149,9 @@ h2 .conta{letter-spacing:.01em;text-transform:none;color:var(--dim);font-weight:
 .chip:hover{background:#151c24}
 .az-vista{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(5,8,12,.72);border-radius:.7vw}
 .az-vista.aperta{display:flex}
+a.mappa{color:inherit;text-decoration:none}
+@media (min-width:761px){ a.mappa{pointer-events:none} }
+.az-mappa{display:inline-block;margin-top:.5vw;font-size:max(13px,1vw);color:#7cc4ff;text-decoration:none;font-weight:700}
 .az-box{width:46vw;background:var(--panel);border:.12vw solid #2c3744;border-radius:.8vw;padding:1.4vw 1.6vw}
 .az-box .tipo{font-size:max(12px,.95vw)}
 .az-box .cliente{font-size:max(18px,1.7vw);white-space:normal}
@@ -187,7 +194,10 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   .data{grid-column:1/-1;grid-row:2;font-size:14px}
   #btnAggiungi{grid-column:1;grid-row:3}
   #btnMese{grid-column:2;grid-row:3}
-  #btnDaFatt{grid-column:1/-1;grid-row:4}
+  #btnCerca{grid-column:1;grid-row:4}
+  #btnDaFatt{grid-column:2;grid-row:4}
+  #cercaVista h2{flex-wrap:nowrap}
+  .cerca-in{font-size:16px;padding:8px 10px;border-radius:8px;margin:0 8px 0 0}
   .btn{font-size:14px;padding:9px 14px;border-width:1.5px;white-space:nowrap}
   .num{font-size:12px;padding:1px 7px;margin-left:6px}
   .btn .num{font-size:11px}
@@ -202,6 +212,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   .tipo,.prev{font-size:12px}
   .cliente{font-size:18px;white-space:normal}
   .indirizzo{font-size:13px;white-space:normal}
+  a.mappa{color:#7cc4ff;text-decoration:underline;text-underline-offset:2px}
   .nota{font-size:13px}
   .card .giu{margin-top:8px}
   .quando{font-size:18px}
@@ -271,7 +282,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   var API = 'https://script.google.com/macros/s/AKfycbzOq5uRLYzRQ0vYWyZLhWh-01LlQS_ZQgGwBj5Ap1vGCBuv0ht3Uvu76kKVmTZVqAsx9Q/exec';
   var m = (location.hash + '&' + location.search).match(/[#?&]k=([A-Za-z0-9]+)/);
   document.body.setAttribute('data-k', m ? m[1] : '');
-  var FUNZIONI = ['getDati', 'aggiungiDaTv', 'spostaDaTv', 'cancellaDaTv', 'fattoDaTv', 'fatturaDaTv'];
+  var FUNZIONI = ['getDati', 'aggiungiDaTv', 'spostaDaTv', 'cancellaDaTv', 'modificaDaTv', 'fattoDaTv', 'fatturaDaTv'];
   function nuovoRunner(){
     var ok = null, ko = null, r = {};
     r.withSuccessHandler = function(f){ ok = f; return r; };
@@ -292,13 +303,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107200940';
+  var VERSIONE = '20261107214259';
   setInterval(function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107200940') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107214259') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   }, 3 * 60 * 1000);
@@ -310,7 +321,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   <header>
     <div class="sxh"><div class="titolo" id="titolo">Lavorazioni</div><button class="btn pieno" id="btnAggiungi">+ Aggiungi</button></div>
     <div class="data" id="data"></div>
-    <div class="dxh"><button class="btn" id="btnDaFatt"><span>Da fatt.</span><span class="num" id="nDaFatt"></span></button><button class="btn" id="btnMese"><span id="btnMeseTxt">Mese</span><span class="num" id="nMeseBtn"></span></button><div class="ora" id="ora"></div></div>
+    <div class="dxh"><button class="btn" id="btnCerca">🔍 Cerca</button><button class="btn" id="btnDaFatt"><span>Da fatt.</span><span class="num" id="nDaFatt"></span></button><button class="btn" id="btnMese"><span id="btnMeseTxt">Mese</span><span class="num" id="nMeseBtn"></span></button><div class="ora" id="ora"></div></div>
   </header>
   <main>
     <section class="pannello">
@@ -342,15 +353,22 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
         <span class="nav"><span class="conta">lavori senza la spunta Fatt.</span><button class="btn" id="fattChiudi">Chiudi</button></span></h2>
       <div class="scorri"><div class="griglia" id="listaFatt"></div></div>
     </section>
+    <section class="pannello fatt-vista" id="cercaVista">
+      <h2><input class="cerca-in" id="cTesto" type="search" placeholder="Cliente, indirizzo, preventivo, note…" autocomplete="off">
+        <span class="nav"><span class="conta" id="cConta"></span><button class="btn" id="cChiudi">Chiudi</button></span></h2>
+      <div class="scorri"><div class="griglia" id="listaCerca"></div></div>
+    </section>
     <section class="az-vista" id="azVista">
       <div class="az-box">
         <div class="tipo" id="azTipo"></div>
         <div class="cliente" id="azCliente"></div>
         <div class="quando-az" id="azQuando"></div>
+        <a class="az-mappa" id="azMappa" href="#" target="_blank" rel="noopener">📍 Apri l'indirizzo in Google Maps</a>
         <div class="az-passo" id="azScelta">
           <div class="az-pulsanti" style="justify-content:flex-start">
             <button class="btn verde" id="azFatto">✓ Fatto</button>
             <button class="btn pieno" id="azSposta">Sposta</button>
+            <button class="btn" id="azModifica">Modifica</button>
             <button class="btn rosso" id="azCancella">Cancella</button>
             <span style="flex:1"></span>
             <button class="btn" id="azChiudi">Chiudi</button>
@@ -367,7 +385,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
             <button class="btn" id="azIndietroS">Indietro</button><button class="btn pieno" id="azConfermaS">Sposta qui</button></div>
         </div>
         <div class="az-passo" id="azPassoCancella" style="display:none">
-          <div class="az-domanda">Cancellare questo lavoro dal calendario? Non si può annullare dalla TV.</div>
+          <div class="az-domanda">Cancellare questo lavoro dal calendario? Finisce nel cestino del foglio, da dove si può ripristinare.</div>
           <div class="az-pulsanti"><span class="esito" id="azEsitoC"></span>
             <button class="btn" id="azIndietroC">No, indietro</button><button class="btn rosso pieno" id="azConfermaC">Sì, cancella</button></div>
         </div>
@@ -375,7 +393,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
     </section>
     <section class="agg-vista" id="aggVista">
       <div class="form">
-        <h2><span>Nuova lavorazione</span></h2>
+        <h2><span id="fTitolo">Nuova lavorazione</span></h2>
         <div class="campo coppia">
           <div><label for="fData">Data *</label><input type="date" id="fData"><div class="err" id="eData"></div></div>
           <div><label for="fOra">Ora</label><input type="time" id="fOra"></div>
@@ -465,17 +483,19 @@ function card(l, rit){
     '<div class="su"><span class="tipo" style="color:' + coloreTipo(l) + '">' + esc(l.tipo || 'Lavorazione') + '</span>' +
       (l.prev ? '<span class="prev">Prev. ' + esc(l.prev) + '</span>' : '') + '</div>' +
     '<div class="cliente">' + esc(l.cliente) + '</div>' +
-    '<div class="indirizzo">' + (l.indirizzo ? esc(l.indirizzo) : '&nbsp;') + '</div>' +
+    '<div class="indirizzo">' + (l.indirizzo ? linkMappa(l.indirizzo) : '&nbsp;') + '</div>' +
     (l.note ? '<div class="nota">' + esc(l.note) + '</div>' : '') +
     '<div class="giu"><span class="quando' + (rit?' r':'') + '">' + esc(quando || '') + '</span>' + etich + '</div></div>';
 }
+function urlMappa(ind){ return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ind); }
+function linkMappa(ind){ return '<a class="mappa" href="' + urlMappa(ind) + '" target="_blank" rel="noopener">' + esc(ind) + '</a>'; }
 function spunta(l){
   return '<span class="spunta' + (l.fatt ? ' on' : '') + '" data-f="' + l.idx + '" title="Fatturazione">Fatt.<span class="q">✓</span></span>';
 }
 function chip(l){
   return '<div class="it chip' + (l.fatto?' fatto':'') + '" data-i="' + l.idx + '" style="--c:'+colore(l)+'">' +
     '<div class="t1">' + (l.oraN ? '<span class="o">'+l.oraN+'</span> ' : '') + esc(l.cliente) + '</div>' +
-    '<div class="t2"><b style="color:' + coloreTipo(l) + '">' + esc(l.tipo || '') + '</b>' + (l.indirizzo ? ' · ' + esc(l.indirizzo) : '') + '</div>' +
+    '<div class="t2"><b style="color:' + coloreTipo(l) + '">' + esc(l.tipo || '') + '</b>' + (l.indirizzo ? ' · ' + linkMappa(l.indirizzo) : '') + '</div>' +
     (l.note ? '<div class="t3">' + esc(l.note) + '</div>' : '') + spunta(l) + '</div>';
 }
 
@@ -535,6 +555,35 @@ function render(){
   if (meseAperto) renderMese();
   if (giornoSel) renderGiorno();
   if (fattAperto) renderFatt();
+  if (cercaAperto) renderCerca();
+}
+
+/* ---- CERCA: cliente, indirizzo, preventivo, note o tipo, in tutti i lavori caricati ---- */
+var cercaAperto = false;
+function norm(t){ return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+function renderCerca(){
+  var parole = norm($('cTesto').value).split(/\s+/).filter(Boolean);
+  if (!parole.length) { $('cConta').textContent = ''; $('listaCerca').innerHTML = '<div class="vuoto">Scrivi il nome di un cliente, un indirizzo o un n° di preventivo</div>'; return; }
+  var a = dati.lavori.filter(function(l){
+    var t = norm([l.cliente, l.indirizzo, l.prev, l.note, l.tipo].join(' '));
+    return parole.every(function(p){ return t.indexOf(p) >= 0; });
+  }).sort(function(x, y){ return x.d > y.d ? -1 : x.d < y.d ? 1 : ordina(x, y); });   /* i più recenti in alto */
+  $('cConta').textContent = a.length === 1 ? '1 lavoro' : a.length + ' lavori';
+  var h = '', ult = '';
+  a.slice(0, 150).forEach(function(l){
+    if (l.d !== ult) { ult = l.d; var d = daChiave(l.d);
+      h += '<div class="sez">' + GIORNI[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()] + ' ' + d.getFullYear() + '</div>'; }
+    h += card(l);
+  });
+  $('listaCerca').innerHTML = h || '<div class="vuoto">Nessun lavoro trovato</div>';
+}
+function apriCerca(si){
+  cercaAperto = si;
+  if (si) { if (giornoSel) chiudiGiorno(); if (meseAperto) apriMese(false); if (fattAperto) apriFatt(false);
+    $('cTesto').value = ''; renderCerca(); rinviaChiusura(); setTimeout(function(){ $('cTesto').focus(); }, 30); }
+  else { $('cTesto').blur(); if (!giornoSel && !meseAperto && !fattAperto) clearTimeout(timerChiudi); }
+  $('cercaVista').className = 'pannello fatt-vista' + (si ? ' aperta' : '');
+  $('btnCerca').className = 'btn' + (si ? ' on' : '');
 }
 
 /* ---- DA FATT.: tutti i lavori senza la spunta Fatt., per giorno ---- */
@@ -552,7 +601,7 @@ function renderFatt(){
 }
 function apriFatt(si){
   fattAperto = si;
-  if (si) { if (giornoSel) chiudiGiorno(); if (meseAperto) apriMese(false); renderFatt(); rinviaChiusura(); }
+  if (si) { if (cercaAperto) apriCerca(false); if (giornoSel) chiudiGiorno(); if (meseAperto) apriMese(false); renderFatt(); rinviaChiusura(); }
   else if (!giornoSel && !meseAperto) clearTimeout(timerChiudi);
   $('fattVista').className = 'pannello fatt-vista' + (si ? ' aperta' : '');
   $('btnDaFatt').className = 'btn' + (si ? ' on' : '');
@@ -611,7 +660,7 @@ function renderMese(){
 
 /* mese e giorno si chiudono da soli dopo 2 minuti, così la TV torna sempre su oggi e settimana
    (non mentre si sta compilando il modulo Aggiungi) */
-function rinviaChiusura(){ clearTimeout(timerChiudi); if (window.innerWidth <= 760) return; timerChiudi = setTimeout(function(){ if (aggAperto || azAperto) return; chiudiGiorno(); apriMese(false); apriFatt(false); }, 120000); }
+function rinviaChiusura(){ clearTimeout(timerChiudi); if (window.innerWidth <= 760) return; timerChiudi = setTimeout(function(){ if (aggAperto || azAperto) return; chiudiGiorno(); apriMese(false); apriFatt(false); apriCerca(false); }, 120000); }
 function apriMese(si){
   meseAperto = si; if (si) meseScarto = 0;
   $('meseVista').className = 'pannello mese-vista' + (si ? ' aperta' : '');
@@ -621,7 +670,10 @@ function apriMese(si){
   if (si) { renderMese(); rinviaChiusura(); } else clearTimeout(timerChiudi);
 }
 function spostaMese(n){ meseScarto += n; renderMese(); rinviaChiusura(); }
-$('btnMese').onclick = function(){ if (giornoSel) chiudiGiorno(); if (fattAperto) apriFatt(false); apriMese(!meseAperto); };
+$('btnMese').onclick = function(){ if (giornoSel) chiudiGiorno(); if (fattAperto) apriFatt(false); if (cercaAperto) apriCerca(false); apriMese(!meseAperto); };
+$('btnCerca').onclick = function(){ apriCerca(!cercaAperto); };
+$('cChiudi').onclick = function(){ apriCerca(false); };
+$('cTesto').oninput = function(){ renderCerca(); rinviaChiusura(); };
 $('btnDaFatt').onclick = function(){ apriFatt(!fattAperto); };
 $('fattChiudi').onclick = function(){ apriFatt(false); };
 $('mChiudi').onclick = function(){ apriMese(false); };
@@ -641,11 +693,12 @@ function clicLavoro(e){ if (clicSpunta(e)) return; var lav = e.target.closest('[
 $('listaOggi').onclick = clicLavoro;
 $('listaGiorno').onclick = clicLavoro;
 $('listaFatt').onclick = clicLavoro;
+$('listaCerca').onclick = clicLavoro;
 $('sett').onclick = clicGiorno;
 $('mese').onclick = clicGiorno;
 /* ---- AGGIUNGI dalla pagina ---- */
 var TIPI = ['Sopralluogo','Campioni','Posa','Consegna','Ritiro','Spedizione','Promemoria'];
-var aggTipo = '', aggPrio = 'Media', aggAperto = false;
+var aggTipo = '', aggPrio = 'Media', aggAperto = false, aggModifica = null;
 TIPI.forEach(function(t){
   var b = document.createElement('button'); b.type = 'button'; b.className = 'scelta'; b.textContent = t;
   b.style.setProperty('--c', COLORE_TIPO[t.toLowerCase()] || 'var(--accent)');
@@ -659,13 +712,23 @@ TIPI.forEach(function(t){
   b.onclick = function(){ aggPrio = p.nome; [].forEach.call($('fPrio').children, function(c){ c.classList.remove('on'); }); b.classList.add('on'); };
   $('fPrio').appendChild(b);
 });
-function apriAggiungi(){
+function apriAggiungi(lav){
   aggAperto = true; clearTimeout(timerChiudi);
-  $('fData').value = giornoSel || chiave(new Date());
-  ['fOra','fCliente','fIndirizzo','fPrev','fNote'].forEach(function(id){ $(id).value = ''; });
+  var m = lav && lav.cliente ? lav : null;      /* con un lavoro: modifica; senza: nuovo */
+  aggModifica = m ? { r:m.r, d:m.d, cliente:m.cliente } : null;
+  $('fTitolo').textContent = m ? 'Modifica lavorazione' : 'Nuova lavorazione';
+  $('fSalva').textContent = m ? 'Salva modifiche' : 'Aggiungi al calendario';
+  $('fData').value = m ? m.d : (giornoSel || chiave(new Date()));
+  $('fOra').value = m ? (m.oraN || '') : '';
+  $('fCliente').value = m ? m.cliente || '' : '';
+  $('fIndirizzo').value = m ? m.indirizzo || '' : '';
+  $('fPrev').value = m ? m.prev || '' : '';
+  $('fNote').value = m ? m.note || '' : '';
   ['eData','eCliente','eTipo','fEsito'].forEach(function(id){ $(id).textContent = ''; });
   aggTipo = ''; [].forEach.call($('fTipi').children, function(c){ c.classList.remove('on'); });
-  $('fPrio').children[1].click();
+  var it = m ? TIPI.indexOf(m.tipo) : -1; if (it >= 0) $('fTipi').children[it].click();
+  var ip = m ? ['Alta','Media','Bassa'].indexOf(m.prio) : -1;
+  $('fPrio').children[ip >= 0 ? ip : 1].click();
   $('fSalva').disabled = false;
   $('aggVista').className = 'agg-vista aperta';
   setTimeout(function(){ $('fCliente').focus(); }, 50);
@@ -683,19 +746,20 @@ function salvaAggiungi(){
   var l = { data:$('fData').value, ora:$('fOra').value, cliente:$('fCliente').value, indirizzo:$('fIndirizzo').value,
             tipo:aggTipo, preventivo:$('fPrev').value, priorita:aggPrio, note:$('fNote').value };
   $('fSalva').disabled = true; $('fEsito').className = 'esito'; $('fEsito').textContent = 'Salvataggio…';
-  google.script.run
+  var mod = aggModifica, run = google.script.run
     .withSuccessHandler(function(){
-      $('fEsito').className = 'esito ok'; $('fEsito').textContent = '✓ Aggiunta: ' + l.cliente.trim() + ' – ' + l.tipo;
+      $('fEsito').className = 'esito ok'; $('fEsito').textContent = (mod ? '✓ Salvata: ' : '✓ Aggiunta: ') + l.cliente.trim() + ' – ' + l.tipo;
       carica(); setTimeout(chiudiAggiungi, 1500);
     })
     .withFailureHandler(function(e){
       $('fSalva').disabled = false; $('fEsito').className = 'esito ko';
       $('fEsito').textContent = (e && e.message) || 'Non salvata, riprova.';
-    })
-    .aggiungiDaTv(CHIAVE, l);
+    });
+  if (mod) run.modificaDaTv(CHIAVE, mod, l); else run.aggiungiDaTv(CHIAVE, l);
 }
 /* ---- FATT. (fatturazione): spunta veloce dalla TV, indipendente da Fatto ---- */
 function clicSpunta(e){
+  if (e.target.closest('a.mappa')) { e.stopPropagation(); return true; }   /* indirizzo: apre Google Maps */
   var el = e.target.closest('[data-f]'); if (!el) return false;
   e.stopPropagation();
   var l = dati && dati.lavori[+el.getAttribute('data-f')]; if (!l) return true;
@@ -724,7 +788,9 @@ function passoAz(quale){
 }
 function apriAzione(i){
   var l = dati && dati.lavori[i]; if (!l) return;
-  azLav = { r:l.r, d:l.d, cliente:l.cliente, tipo:l.tipo, ora:l.oraN, fatto:!!l.fatto };
+  azLav = { r:l.r, d:l.d, cliente:l.cliente, tipo:l.tipo, ora:l.oraN, fatto:!!l.fatto, i:i };
+  $('azMappa').style.display = l.indirizzo ? '' : 'none';
+  if (l.indirizzo) $('azMappa').href = urlMappa(l.indirizzo);
   $('azFatto').textContent = l.fatto ? 'Togli fatto' : '✓ Fatto';
   $('azFatto').className = 'btn verde' + (l.fatto ? ' on' : '');
   $('azFatto').disabled = false;
@@ -743,7 +809,7 @@ function apriAzione(i){
 }
 function chiudiAzione(){
   azAperto = false; azLav = null; $('azVista').className = 'az-vista';
-  if (giornoSel || meseAperto) rinviaChiusura();
+  if ((giornoSel || meseAperto) && !aggAperto) rinviaChiusura();
 }
 function esitoAz(id, ok, testo){ $(id).className = 'esito ' + (ok ? 'ok' : 'ko'); $(id).textContent = testo; }
 function confermaSposta(){
@@ -779,6 +845,7 @@ $('azFatto').onclick = function(){
 };
 $('azSposta').onclick = function(){ passoAz('sposta'); setTimeout(function(){ $('azData').focus(); }, 30); };
 $('azCancella').onclick = function(){ passoAz('cancella'); };
+$('azModifica').onclick = function(){ var l = dati.lavori[azLav.i]; aggAperto = true; chiudiAzione(); apriAggiungi(l); };
 $('azChiudi').onclick = chiudiAzione;
 $('azIndietroS').onclick = function(){ passoAz('scelta'); };
 $('azIndietroC').onclick = function(){ passoAz('scelta'); };
@@ -786,7 +853,7 @@ $('azConfermaS').onclick = confermaSposta;
 $('azConfermaC').onclick = confermaCancella;
 $('azVista').onclick = function(e){ if (e.target === $('azVista')) chiudiAzione(); };
 
-$('btnAggiungi').onclick = apriAggiungi;
+$('btnAggiungi').onclick = function(){ apriAggiungi(); };
 $('fAnnulla').onclick = chiudiAggiungi;
 $('fSalva').onclick = salvaAggiungi;
 $('fData').oninput = function(){ $('eData').textContent = ''; };
@@ -795,11 +862,13 @@ $('fCliente').oninput = function(){ $('eCliente').textContent = ''; };
 document.addEventListener('keydown', function(e){
   var indietro = e.key === 'Escape' || e.key === 'Backspace' || e.key === 'GoBack';
   if (azAperto) { if (e.key === 'Escape') chiudiAzione(); return; }
+  if (cercaAperto) { if (e.key === 'Escape') apriCerca(false); return; }   /* si sta scrivendo nella ricerca */
   if (aggAperto) {                       /* mentre si scrive, i tasti rapidi sono spenti */
     if (e.key === 'Escape') chiudiAggiungi();
     return;
   }
   if (e.key === 'a' || e.key === 'A') apriAggiungi();
+  else if (e.key === 'c' || e.key === 'C' || e.key === '/') { apriCerca(true); e.preventDefault(); }
   else if (e.key === 'm' || e.key === 'M') { if (giornoSel) chiudiGiorno(); apriMese(!meseAperto); }
   else if (fattAperto && indietro) { apriFatt(false); e.preventDefault(); }
   else if (giornoSel && indietro) { chiudiGiorno(); e.preventDefault(); }
