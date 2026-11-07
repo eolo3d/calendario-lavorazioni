@@ -73,8 +73,8 @@ h2 .conta{letter-spacing:.01em;text-transform:none;color:var(--dim);font-weight:
 .spunta:hover{background:#ffffff14}
 .spunta .q{width:1.35vw;height:1.35vw;border:.13vw solid var(--dim);border-radius:.28vw;display:inline-flex;align-items:center;
   justify-content:center;font-size:1vw;line-height:1;color:transparent}
-.spunta.on{color:var(--ok)}
-.spunta.on .q{background:var(--ok);border-color:var(--ok);color:#06210f}
+.spunta.on{color:var(--accent)}
+.spunta.on .q{background:var(--accent);border-color:var(--accent);color:#04263a}
 .card .destra{display:flex;align-items:center;gap:.6vw}
 .chip{position:relative;padding-right:3.4vw}
 .chip .spunta{position:absolute;right:.25vw;top:50%;transform:translateY(-50%);flex-direction:column;gap:.1vw;font-size:.62vw;padding:.15vw}
@@ -261,7 +261,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   var API = 'https://script.google.com/macros/s/AKfycbzOq5uRLYzRQ0vYWyZLhWh-01LlQS_ZQgGwBj5Ap1vGCBuv0ht3Uvu76kKVmTZVqAsx9Q/exec';
   var m = (location.hash + '&' + location.search).match(/[#?&]k=([A-Za-z0-9]+)/);
   document.body.setAttribute('data-k', m ? m[1] : '');
-  var FUNZIONI = ['getDati', 'aggiungiDaTv', 'spostaDaTv', 'cancellaDaTv', 'fattoDaTv'];
+  var FUNZIONI = ['getDati', 'aggiungiDaTv', 'spostaDaTv', 'cancellaDaTv', 'fattoDaTv', 'fatturaDaTv'];
   function nuovoRunner(){
     var ok = null, ko = null, r = {};
     r.withSuccessHandler = function(f){ ok = f; return r; };
@@ -443,7 +443,7 @@ function card(l, rit){
     '<div class="giu"><span class="quando' + (rit?' r':'') + '">' + esc(quando || '') + '</span>' + etich + '</div></div>';
 }
 function spunta(l){
-  return '<span class="spunta' + (l.fatto ? ' on' : '') + '" data-f="' + l.idx + '" title="Segna come fatto">Fatt.<span class="q">✓</span></span>';
+  return '<span class="spunta' + (l.fatt ? ' on' : '') + '" data-f="' + l.idx + '" title="Fatturazione">Fatt.<span class="q">✓</span></span>';
 }
 function chip(l){
   return '<div class="it chip' + (l.fatto?' fatto':'') + '" data-i="' + l.idx + '" style="--c:'+colore(l)+'">' +
@@ -628,20 +628,20 @@ function salvaAggiungi(){
     })
     .aggiungiDaTv(CHIAVE, l);
 }
-/* ---- FATT.: spunta veloce dalla TV ---- */
+/* ---- FATT. (fatturazione): spunta veloce dalla TV, indipendente da Fatto ---- */
 function clicSpunta(e){
   var el = e.target.closest('[data-f]'); if (!el) return false;
   e.stopPropagation();
   var l = dati && dati.lavori[+el.getAttribute('data-f')]; if (!l) return true;
-  var nuovo = !l.fatto, j = { r:l.r, d:l.d, cliente:l.cliente };
-  l.fatto = nuovo; render();                       /* si vede subito, poi si salva */
+  var nuovo = !l.fatt, j = { r:l.r, d:l.d, cliente:l.cliente };
+  l.fatt = nuovo; render();                        /* si vede subito, poi si salva */
   google.script.run
     .withSuccessHandler(function(){ carica(); })
     .withFailureHandler(function(err){
-      l.fatto = !nuovo; render();
+      l.fatt = !nuovo; render();
       alertBreve((err && err.message) || 'Non salvato, riprova.');
     })
-    .fattoDaTv(CHIAVE, j, nuovo);
+    .fatturaDaTv(CHIAVE, j, nuovo);
   return true;
 }
 function alertBreve(t){
@@ -769,7 +769,7 @@ function orologio(){
 
 $('legenda').innerHTML = ['alta','media','bassa'].map(function(k){
     return '<span><i class="dot" style="background:'+PRIO[k].c+'"></i>Priorità ' + PRIO[k].nome.toLowerCase() + '</span>'; }).join('') +
-  '<span><i class="dot" style="background:'+VERDE+'"></i>Fatto</span><span>Clic su un lavoro per spostarlo o cancellarlo · clic su un giorno per aprirlo</span>';
+  '<span><i class="dot" style="background:'+VERDE+'"></i>Fatto</span><span><i class="dot" style="background:var(--accent)"></i>Fatt. = fatturazione</span><span>Clic su un lavoro per spostarlo o cancellarlo · clic su un giorno per aprirlo</span>';
 orologio(); setInterval(orologio, 1000);
 carica(); setInterval(carica, 60000);
 var tR; window.addEventListener('resize', function(){ clearTimeout(tR); tR = setTimeout(render, 300); });
