@@ -5,7 +5,7 @@
 <base target="_top">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lavorazioni</title>
+<title>Grafix</title>
 <style>
 :root{
   --bg:#0b0f14; --panel:#141a21; --panel2:#1b232c;
@@ -348,13 +348,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107231537';
+  var VERSIONE = '20261107232324';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107231537') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107232324') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -365,7 +365,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
 </script>
 <div class="app">
   <header>
-    <div class="sxh"><div class="titolo" id="titolo">Lavorazioni</div><button class="btn pieno" id="btnAggiungi">+ Aggiungi</button></div>
+    <div class="sxh"><div class="titolo" id="titolo">Grafix</div><button class="btn pieno" id="btnAggiungi">+ Aggiungi</button></div>
     <div class="data" id="data"></div>
     <div class="dxh"><button class="btn" id="btnCerca">🔍 Cerca</button><button class="btn" id="btnDaFatt"><span>Da fatt.</span><span class="num" id="nDaFatt"></span></button><button class="btn" id="btnMese"><span id="btnMeseTxt">Mese</span><span class="num" id="nMeseBtn"></span></button><div class="ora" id="ora"></div></div>
   </header>
@@ -573,7 +573,8 @@ function render(){
   if (!dati) return;
   var oggi = new Date(), ko = chiave(oggi);
   giornoReso = ko; mappa = {};
-  $('titolo').textContent = dati.titolo || 'Lavorazioni';
+  $('titolo').textContent = dati.titolo || 'Grafix';
+  document.title = dati.titolo || 'Grafix';
   dati.lavori.forEach(function(l, i){ l.idx = i; l.oraN = oraN(l.ora); (mappa[l.d] = mappa[l.d] || []).push(l); });
   Object.keys(mappa).forEach(function(k){ mappa[k].sort(ordina); });
 
