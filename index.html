@@ -206,6 +206,7 @@ a.mappa,a.tel{color:inherit;text-decoration:none}
 .err{color:var(--alta);font-size:max(12px,.85vw);margin-top:.3vw;min-height:1.1em}
 .nota-ind{font-size:max(12px,.85vw);margin-top:.3vw;min-height:1.1em;color:var(--dim)}
 .nota-ind.ok{color:#7cc4ff}
+.nota-ind a.alt-ind{color:#b9c4d0;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
 .azioni{grid-column:1/-1;display:flex;justify-content:flex-end;gap:1vw;align-items:center;margin-top:.3vw}
 .esito{font-size:max(13px,1vw);font-weight:700;margin-right:auto}
 .num{display:inline-block;min-width:1.9em;text-align:center;background:var(--accent);color:var(--bg);border-radius:99vw;
@@ -347,13 +348,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107231036';
+  var VERSIONE = '20261107231537';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107231036') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107231537') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -862,6 +863,7 @@ function apriAggiungi(lav){
   $('fPrev').value = m ? m.prev || '' : '';
   $('fNote').value = m ? m.note || '' : '';
   ['eData','eCliente','eTipo','fEsito','fIndNota'].forEach(function(id){ $(id).textContent = ''; }); cercaInd++;
+  indManuale = !!(m && m.indirizzo);   /* in modifica, un indirizzo già scritto non si tocca */
   aggTipo = ''; [].forEach.call($('fTipi').children, function(c){ c.classList.remove('on'); });
   var it = m ? TIPI.indexOf(m.tipo) : -1; if (it >= 0) $('fTipi').children[it].click();
   var ip = m ? ['Alta','Media','Bassa'].indexOf(m.prio) : -1;
@@ -999,25 +1001,34 @@ $('fAnnulla').onclick = chiudiAggiungi;
 $('fSalva').onclick = salvaAggiungi;
 $('fData').oninput = function(){ $('eData').textContent = ''; };
 $('fCliente').oninput = function(){ $('eCliente').textContent = ''; };
-/* scritto il cliente ("farmacia meazza rho"), se l'indirizzo è vuoto Google Maps lo cerca e lo inserisce */
-var cercaInd = 0;
-$('fCliente').onchange = function(){
+/* mentre si scrive il cliente ("farmacia meazza rho") Google Maps cerca l'indirizzo, come una ricerca su Google:
+   lo inserisce da solo finché l'indirizzo non è stato scritto a mano, e mostra le altre sedi trovate da scegliere */
+var cercaInd = 0, timerInd = null, indManuale = false;
+function cercaIndirizzoOra(){
   var testo = $('fCliente').value.trim(), n = ++cercaInd;
-  if (testo.length < 4 || $('fIndirizzo').value.trim()) return;
-  $('fIndNota').className = 'nota-ind'; $('fIndNota').textContent = '🔍 Cerco l\'indirizzo su Google Maps…';
+  if (testo.length < 4 || indManuale) { if (!indManuale) { $('fIndNota').textContent = ''; } return; }
+  $('fIndNota').className = 'nota-ind'; $('fIndNota').textContent = '🔍 Cerco su Google Maps…';
   google.script.run
     .withSuccessHandler(function(r){
-      if (n !== cercaInd) return;
-      if (r && r.indirizzo && !$('fIndirizzo').value.trim()) {
+      if (n !== cercaInd || indManuale) return;
+      if (r && r.indirizzo) {
         $('fIndirizzo').value = r.indirizzo;
-        $('fIndNota').className = 'nota-ind ok'; $('fIndNota').textContent = '📍 Trovato su Google Maps: controlla che sia giusto';
-      } else if (!r) { $('fIndNota').textContent = 'Indirizzo non trovato: scrivilo a mano'; }
-      else $('fIndNota').textContent = '';
+        var altri = (r.altri || []).slice(1);
+        $('fIndNota').className = 'nota-ind ok';
+        $('fIndNota').innerHTML = '📍 Trovato su Google Maps: controlla che sia giusto' + (altri.length ? '<br>Altre sedi: ' +
+          altri.map(function(x){ return '<a href="#" class="alt-ind">' + esc(x) + '</a>'; }).join(' · ') : '');
+      } else { $('fIndirizzo').value = ''; $('fIndNota').className = 'nota-ind'; $('fIndNota').textContent = 'Indirizzo non trovato: continua a scrivere (es. aggiungi la città) o scrivilo a mano'; }
     })
     .withFailureHandler(function(){ if (n === cercaInd) $('fIndNota').textContent = ''; })
     .cercaIndirizzoDaTv(CHIAVE, testo);
+}
+$('fCliente').addEventListener('input', function(){ clearTimeout(timerInd); timerInd = setTimeout(cercaIndirizzoOra, 700); });
+$('fIndNota').onclick = function(e){
+  var a = e.target.closest('.alt-ind'); if (!a) return; e.preventDefault();
+  $('fIndirizzo').value = a.textContent; indManuale = true;
+  $('fIndNota').className = 'nota-ind ok'; $('fIndNota').textContent = '📍 Sede scelta';
 };
-$('fIndirizzo').oninput = function(){ cercaInd++; $('fIndNota').className = 'nota-ind'; $('fIndNota').textContent = ''; };
+$('fIndirizzo').oninput = function(){ cercaInd++; indManuale = !!$('fIndirizzo').value.trim(); $('fIndNota').className = 'nota-ind'; $('fIndNota').textContent = ''; };
 
 document.addEventListener('keydown', function(e){
   var indietro = e.key === 'Escape' || e.key === 'Backspace' || e.key === 'GoBack';
