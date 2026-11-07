@@ -336,13 +336,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107224528';
+  var VERSIONE = '20261107225205';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107224528') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107225205') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -623,8 +623,8 @@ var TIPI_CARICO = [['Posa','#ff5a5f'],['Consegna','#f5b52e'],['Ritiro','#4cc96f'
 /* quando mancano tempo o persone: sopralluoghi e ritiri pesano poco, la posa di più */
 var ORE_TIPO = { 'posa':4, 'consegna':1, 'campioni':1, 'sopralluogo':0.5, 'ritiro':0.5, 'spedizione':0.5, 'promemoria':0 };
 var PERSONE_TIPO = { 'posa':2 };
-/* "⏱ 2 h + V 00:40": tempo stimato più viaggio andata e ritorno (calcolato da Google Maps dalla sede) */
-function viaggioTxt(min){ min = Math.round(Number(min) || 0); return 'V ' + pad(Math.floor(min / 60)) + ':' + pad(min % 60); }
+/* "⏱ 2 h + 🚐 00:40": tempo stimato più viaggio andata e ritorno (calcolato da Google Maps dalla sede) */
+function viaggioTxt(min){ min = Math.round(Number(min) || 0); return '🚐 ' + pad(Math.floor(min / 60)) + ':' + pad(min % 60); }
 function tempoTxt(l){ return '⏱ ' + (l.stima ? oreTxt(l.stima) : '') + (l.viaggio ? (l.stima ? ' + ' : '') + viaggioTxt(l.viaggio) : ''); }
 function oreLavoro(l){ var n = Number(l.stima); if (n > 0) return n; var t = String(l.tipo || '').trim().toLowerCase(); return ORE_TIPO.hasOwnProperty(t) ? ORE_TIPO[t] : 1; }
 function personeLavoro(l){ var n = Number(l.pers); if (n > 0) return n; return PERSONE_TIPO[String(l.tipo || '').trim().toLowerCase()] || 1; }
