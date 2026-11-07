@@ -204,6 +204,8 @@ a.mappa,a.tel{color:inherit;text-decoration:none}
 .btn.rosso:hover,.btn.rosso:focus{background:var(--alta);color:#fff}
 .btn.rosso.pieno{background:var(--alta);color:#fff}
 .err{color:var(--alta);font-size:max(12px,.85vw);margin-top:.3vw;min-height:1.1em}
+.nota-ind{font-size:max(12px,.85vw);margin-top:.3vw;min-height:1.1em;color:var(--dim)}
+.nota-ind.ok{color:#7cc4ff}
 .azioni{grid-column:1/-1;display:flex;justify-content:flex-end;gap:1vw;align-items:center;margin-top:.3vw}
 .esito{font-size:max(13px,1vw);font-weight:700;margin-right:auto}
 .num{display:inline-block;min-width:1.9em;text-align:center;background:var(--accent);color:var(--bg);border-radius:99vw;
@@ -324,7 +326,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   var API = 'https://script.google.com/macros/s/AKfycbzOq5uRLYzRQ0vYWyZLhWh-01LlQS_ZQgGwBj5Ap1vGCBuv0ht3Uvu76kKVmTZVqAsx9Q/exec';
   var m = (location.hash + '&' + location.search).match(/[#?&]k=([A-Za-z0-9]+)/);
   document.body.setAttribute('data-k', m ? m[1] : '');
-  var FUNZIONI = ['getDati', 'aggiungiDaTv', 'spostaDaTv', 'cancellaDaTv', 'modificaDaTv', 'fattoDaTv', 'fatturaDaTv'];
+  var FUNZIONI = ['getDati', 'aggiungiDaTv', 'spostaDaTv', 'cancellaDaTv', 'modificaDaTv', 'cercaIndirizzoDaTv', 'fattoDaTv', 'fatturaDaTv'];
   function nuovoRunner(){
     var ok = null, ko = null, r = {};
     r.withSuccessHandler = function(f){ ok = f; return r; };
@@ -345,13 +347,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107230404';
+  var VERSIONE = '20261107231036';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107230404') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107231036') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -454,7 +456,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
         </div>
         <div class="campo"><label for="fPrev">Rif. preventivo n°</label><input id="fPrev" placeholder="448" autocomplete="off"></div>
         <div class="campo"><label for="fCliente">Nome cliente *</label><input id="fCliente" placeholder="Hotel Belvedere" autocomplete="off"><div class="err" id="eCliente"></div></div>
-        <div class="campo"><label for="fIndirizzo">Indirizzo</label><input id="fIndirizzo" placeholder="Via Savona 1, Milano" autocomplete="off"></div>
+        <div class="campo"><label for="fIndirizzo">Indirizzo</label><input id="fIndirizzo" placeholder="Via Savona 1, Milano" autocomplete="off"><div class="nota-ind" id="fIndNota"></div></div>
         <div class="campo coppia">
           <div><label for="fRef">Referente</label><input id="fRef" placeholder="Sig. Rossi" autocomplete="off"></div>
           <div><label for="fTel">N° di telefono</label><input id="fTel" type="tel" placeholder="333 123 4567" autocomplete="off"></div>
@@ -859,7 +861,7 @@ function apriAggiungi(lav){
   $('fTel').value = m ? m.tel || '' : '';
   $('fPrev').value = m ? m.prev || '' : '';
   $('fNote').value = m ? m.note || '' : '';
-  ['eData','eCliente','eTipo','fEsito'].forEach(function(id){ $(id).textContent = ''; });
+  ['eData','eCliente','eTipo','fEsito','fIndNota'].forEach(function(id){ $(id).textContent = ''; }); cercaInd++;
   aggTipo = ''; [].forEach.call($('fTipi').children, function(c){ c.classList.remove('on'); });
   var it = m ? TIPI.indexOf(m.tipo) : -1; if (it >= 0) $('fTipi').children[it].click();
   var ip = m ? ['Alta','Media','Bassa'].indexOf(m.prio) : -1;
@@ -997,6 +999,25 @@ $('fAnnulla').onclick = chiudiAggiungi;
 $('fSalva').onclick = salvaAggiungi;
 $('fData').oninput = function(){ $('eData').textContent = ''; };
 $('fCliente').oninput = function(){ $('eCliente').textContent = ''; };
+/* scritto il cliente ("farmacia meazza rho"), se l'indirizzo è vuoto Google Maps lo cerca e lo inserisce */
+var cercaInd = 0;
+$('fCliente').onchange = function(){
+  var testo = $('fCliente').value.trim(), n = ++cercaInd;
+  if (testo.length < 4 || $('fIndirizzo').value.trim()) return;
+  $('fIndNota').className = 'nota-ind'; $('fIndNota').textContent = '🔍 Cerco l\'indirizzo su Google Maps…';
+  google.script.run
+    .withSuccessHandler(function(r){
+      if (n !== cercaInd) return;
+      if (r && r.indirizzo && !$('fIndirizzo').value.trim()) {
+        $('fIndirizzo').value = r.indirizzo;
+        $('fIndNota').className = 'nota-ind ok'; $('fIndNota').textContent = '📍 Trovato su Google Maps: controlla che sia giusto';
+      } else if (!r) { $('fIndNota').textContent = 'Indirizzo non trovato: scrivilo a mano'; }
+      else $('fIndNota').textContent = '';
+    })
+    .withFailureHandler(function(){ if (n === cercaInd) $('fIndNota').textContent = ''; })
+    .cercaIndirizzoDaTv(CHIAVE, testo);
+};
+$('fIndirizzo').oninput = function(){ cercaInd++; $('fIndNota').className = 'nota-ind'; $('fIndNota').textContent = ''; };
 
 document.addEventListener('keydown', function(e){
   var indietro = e.key === 'Escape' || e.key === 'Backspace' || e.key === 'GoBack';
