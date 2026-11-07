@@ -29,7 +29,26 @@ header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
 .btn:hover,.btn:focus{background:var(--accent);color:var(--bg);outline:none}
 .btn.on{background:var(--accent);color:var(--bg)}
 
-main{flex:1;min-height:0;position:relative;display:grid;grid-template-rows:42fr 58fr;gap:.8vw}
+main{flex:1;min-height:0;position:relative;display:grid;grid-template-rows:39fr 45fr 16fr;gap:.8vw}
+/* CARICO: grafico a barre dei giorni lavorativi (solo TV e PC) */
+.pannello.carico{flex-direction:row;gap:1.2vw;padding:.7vw 1vw .6vw}
+.car-tit{width:11vw;flex:none;display:flex;flex-direction:column;justify-content:center;gap:.4vw}
+.car-tit b{font-size:1.05vw;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800}
+.car-tit span{font-size:.8vw;color:var(--dim)}
+.car-leg{display:flex;flex-wrap:wrap;gap:.2vw .7vw;font-size:.75vw;color:var(--dim)}
+.car-leg i{display:inline-block;width:.6vw;height:.6vw;border-radius:.15vw;margin-right:.25vw;vertical-align:middle}
+.barre{flex:1;min-width:0;display:flex;align-items:stretch;gap:.35vw}
+.bar{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;cursor:pointer;border-radius:.35vw;padding:.15vw 0}
+.bar:hover{background:var(--panel2)}
+.bar.lun{margin-left:.9vw}
+.bar .n{font-size:.85vw;font-weight:800;line-height:1.2;color:var(--txt);min-height:1.1em}
+.bar .col{flex:1;min-height:0;width:62%;display:flex;flex-direction:column-reverse;justify-content:flex-start;gap:1px}
+.bar .seg{width:100%;border-radius:.15vw}
+.bar .g{font-size:.72vw;color:var(--dim);margin-top:.2vw;white-space:nowrap;font-weight:600}
+.bar.oggi .g{color:var(--accent);font-weight:800}
+.bar.oggi{box-shadow:inset 0 0 0 .1vw var(--accent)}
+.bar.pass{opacity:.4}
+.bar.vuota .n{color:var(--faint)}
 .pannello{background:var(--panel);border-radius:.7vw;padding:.9vw 1vw 1vw;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 h2{display:flex;justify-content:space-between;align-items:baseline;gap:1vw;font-size:1.05vw;letter-spacing:.14em;
   text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:.7vw}
@@ -229,6 +248,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   .quando.r{font-size:13px}
   .pill{font-size:11px;padding:3px 9px}
   .vuoto{font-size:15px;padding:18px 0}
+  .carico{display:none!important}
   .sett{display:flex;flex-direction:column;gap:10px}
   .sett-tit{display:block;font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:14px 2px 0}
   .btn.altre{display:block;width:100%;margin-top:6px}
@@ -313,13 +333,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107221816';
+  var VERSIONE = '20261107222401';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107221816') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107222401') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -342,6 +362,10 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
     <section class="pannello">
       <h2><span>Settimana<span class="num" id="nSett">0</span></span><span class="conta" id="titSett"></span></h2>
       <div class="sett" id="sett"></div>
+    </section>
+    <section class="pannello carico" id="carico">
+      <div class="car-tit"><b>Carico</b><span id="caricoSott">prossime 4 settimane</span><div class="car-leg" id="caricoLeg"></div></div>
+      <div class="barre" id="barre"></div>
     </section>
     <section class="pannello mese-vista" id="meseVista">
       <h2><span><span id="titMese">Mese</span><span class="num" id="nMese">0</span></span>
@@ -575,12 +599,46 @@ function render(){
   if ($('btnAltre')) $('btnAltre').onclick = function(e){ e.stopPropagation(); settTelefono += 4; render(); };
   [].forEach.call(document.querySelectorAll('#sett .box'), function(b){ adatta(b, ' altri'); });
 
+  renderCarico();
   $('nDaFatt').textContent = dati.lavori.filter(function(l){ return !l.fatt; }).length;
   if (meseAperto) renderMese();
   if (giornoSel) renderGiorno();
   if (fattAperto) renderFatt();
   if (cercaAperto) renderCerca();
 }
+
+/* ---- CARICO: barre dei giorni lavorativi da questa settimana per 4 settimane, colorate per tipo ---- */
+var TIPI_CARICO = [['Posa','#ff5a5f'],['Consegna','#f5b52e'],['Ritiro','#4cc96f'],['Altro','#4cc2ff']];
+function renderCarico(){
+  if (window.innerWidth <= 760) return;
+  var oggi = new Date(), ko = chiave(oggi), d = new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate());
+  if (d.getDay() === 6) d.setDate(d.getDate() + 2); else if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+  d.setDate(d.getDate() - (d.getDay() - 1));                 /* lunedì */
+  var giorni = [];
+  for (var w = 0; w < 4; w++) for (var g = 0; g < 5; g++) giorni.push(new Date(d.getFullYear(), d.getMonth(), d.getDate() + w * 7 + g));
+  var conti = giorni.map(function(x){
+    var a = mappa[chiave(x)] || [], c = { Posa:0, Consegna:0, Ritiro:0, Altro:0 };
+    a.forEach(function(l){ var t = String(l.tipo || '').trim(); c[c.hasOwnProperty(t) && t !== 'Altro' ? t : 'Altro']++; });
+    c.tot = a.length; return c;
+  });
+  var max = Math.max(4, Math.max.apply(null, conti.map(function(c){ return c.tot; })));
+  var h = '';
+  giorni.forEach(function(x, i){
+    var k = chiave(x), c = conti[i];
+    var segs = TIPI_CARICO.map(function(t){
+      return c[t[0]] ? '<div class="seg" style="height:' + (c[t[0]] / max * 100) + '%;background:' + t[1] + '"></div>' : '';
+    }).join('');
+    h += '<div class="bar' + (x.getDay() === 1 && i ? ' lun' : '') + (k === ko ? ' oggi' : '') + (k < ko ? ' pass' : '') + (c.tot ? '' : ' vuota') +
+      '" data-k="' + k + '" title="' + GIORNI[x.getDay()] + ' ' + x.getDate() + ': ' + c.tot + ' lavori">' +
+      '<div class="n">' + c.tot + '</div><div class="col">' + segs + '</div>' +
+      '<div class="g">' + GIORNI[x.getDay()].slice(0,3) + ' ' + x.getDate() + '</div></div>';
+  });
+  $('barre').innerHTML = h;
+  var f = giorni[giorni.length - 1];
+  $('caricoSott').textContent = 'fino a ' + GIORNI[f.getDay()] + ' ' + f.getDate() + ' ' + MESI[f.getMonth()].slice(0,3);
+}
+$('caricoLeg').innerHTML = TIPI_CARICO.map(function(t){ return '<span><i style="background:' + t[1] + '"></i>' + t[0] + '</span>'; }).join('');
+$('barre').onclick = function(e){ var b = e.target.closest('[data-k]'); if (b) apriGiorno(b.getAttribute('data-k')); };
 
 /* ---- CERCA: cliente, indirizzo, preventivo, note o tipo, in tutti i lavori caricati ---- */
 var cercaAperto = false;
