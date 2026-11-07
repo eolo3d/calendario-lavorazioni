@@ -149,8 +149,12 @@ h2 .conta{letter-spacing:.01em;text-transform:none;color:var(--dim);font-weight:
 .chip:hover{background:#151c24}
 .az-vista{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(5,8,12,.72);border-radius:.7vw}
 .az-vista.aperta{display:flex}
-a.mappa{color:inherit;text-decoration:none}
-@media (min-width:761px){ a.mappa{pointer-events:none} }
+a.mappa,a.tel{color:inherit;text-decoration:none}
+@media (min-width:761px){ .card a.mappa,.card a.tel,.chip a.mappa{pointer-events:none} }
+.rif{font-size:.95vw;color:#b9c4d0;margin-top:.2vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card.fatto .rif{color:#8fe3b0}
+.az-rif{font-size:max(15px,1.15vw);margin-top:.4vw;color:var(--txt)}
+.az-rif a.tel{color:#7cc4ff;font-weight:700;text-decoration:none}
 .az-box{position:relative}
 .az-mappa{position:absolute;top:1.2vw;right:1.4vw;width:max(52px,4vw);height:max(52px,4vw);border-radius:50%;background:#fff;
   display:flex;align-items:center;justify-content:center;box-shadow:0 .2vw .8vw rgba(0,0,0,.45);text-decoration:none}
@@ -217,7 +221,8 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   .tipo,.prev{font-size:12px}
   .cliente{font-size:18px;white-space:normal}
   .indirizzo{font-size:13px;white-space:normal}
-  a.mappa{color:#7cc4ff;text-decoration:underline;text-underline-offset:2px}
+  a.mappa,a.tel{color:#7cc4ff;text-decoration:underline;text-underline-offset:2px}
+  .rif{font-size:13px}
   .nota{font-size:13px}
   .card .giu{margin-top:8px}
   .quando{font-size:18px}
@@ -308,13 +313,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107214801';
+  var VERSIONE = '20261107221359';
   setInterval(function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107214801') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107221359') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   }, 3 * 60 * 1000);
@@ -359,7 +364,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
       <div class="scorri"><div class="griglia" id="listaFatt"></div></div>
     </section>
     <section class="pannello fatt-vista" id="cercaVista">
-      <h2><input class="cerca-in" id="cTesto" type="search" placeholder="Cliente, indirizzo, preventivo, note…" autocomplete="off">
+      <h2><input class="cerca-in" id="cTesto" type="search" placeholder="Cliente, indirizzo, referente, telefono, preventivo, note…" autocomplete="off">
         <span class="nav"><span class="conta" id="cConta"></span><button class="btn" id="cChiudi">Chiudi</button></span></h2>
       <div class="scorri"><div class="griglia" id="listaCerca"></div></div>
     </section>
@@ -368,6 +373,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
         <div class="tipo" id="azTipo"></div>
         <div class="cliente" id="azCliente"></div>
         <div class="quando-az" id="azQuando"></div>
+        <div class="az-rif" id="azRif"></div>
         <a class="az-mappa" id="azMappa" href="#" target="_blank" rel="noopener" title="Naviga con Google Maps" aria-label="Naviga con Google Maps">
           <svg viewBox="0 0 24 34" aria-hidden="true"><path d="M12 0C5.4 0 0 5.3 0 11.9 0 20.8 12 34 12 34s12-13.2 12-22.1C24 5.3 18.6 0 12 0z" fill="#ea4335"/>
           <circle cx="12" cy="12" r="4.6" fill="#a50e0e"/></svg></a>
@@ -408,6 +414,10 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
         <div class="campo"><label for="fPrev">Rif. preventivo n°</label><input id="fPrev" placeholder="448" autocomplete="off"></div>
         <div class="campo"><label for="fCliente">Nome cliente *</label><input id="fCliente" placeholder="Hotel Belvedere" autocomplete="off"><div class="err" id="eCliente"></div></div>
         <div class="campo"><label for="fIndirizzo">Indirizzo</label><input id="fIndirizzo" placeholder="Via Savona 1, Milano" autocomplete="off"></div>
+        <div class="campo coppia">
+          <div><label for="fRef">Referente</label><input id="fRef" placeholder="Sig. Rossi" autocomplete="off"></div>
+          <div><label for="fTel">N° di telefono</label><input id="fTel" type="tel" placeholder="333 123 4567" autocomplete="off"></div>
+        </div>
         <div class="campo largo"><label>Tipo lavorazione *</label><div class="scelte" id="fTipi"></div><div class="err" id="eTipo"></div></div>
         <div class="campo largo"><label>Priorità</label><div class="scelte" id="fPrio"></div></div>
         <div class="campo largo"><label for="fNote">Note</label><textarea id="fNote" placeholder="Portare la scala lunga, citofonare al 2° piano…"></textarea></div>
@@ -491,8 +501,14 @@ function card(l, rit){
       (l.prev ? '<span class="prev">Prev. ' + esc(l.prev) + '</span>' : '') + '</div>' +
     '<div class="cliente">' + esc(l.cliente) + '</div>' +
     '<div class="indirizzo">' + (l.indirizzo ? linkMappa(l.indirizzo) : '&nbsp;') + '</div>' +
+    rigaRif(l) +
     (l.note ? '<div class="nota">' + esc(l.note) + '</div>' : '') +
     '<div class="giu"><span class="quando' + (rit?' r':'') + '">' + esc(quando || '') + '</span>' + etich + '</div></div>';
+}
+function linkTel(t){ return '<a class="tel" href="tel:' + String(t).replace(/[^\d+]/g, '') + '">' + esc(t) + '</a>'; }
+function rigaRif(l){
+  if (!l.ref && !l.tel) return '';
+  return '<div class="rif">' + (l.ref ? '👤 ' + esc(l.ref) : '') + (l.ref && l.tel ? ' · ' : '') + (l.tel ? '📞 ' + linkTel(l.tel) : '') + '</div>';
 }
 function urlMappa(ind){ return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ind); }
 function linkMappa(ind){ return '<a class="mappa" href="' + urlMappa(ind) + '" target="_blank" rel="noopener">' + esc(ind) + '</a>'; }
@@ -572,7 +588,7 @@ function renderCerca(){
   var parole = norm($('cTesto').value).split(/\s+/).filter(Boolean);
   if (!parole.length) { $('cConta').textContent = ''; $('listaCerca').innerHTML = '<div class="vuoto">Scrivi il nome di un cliente, un indirizzo o un n° di preventivo</div>'; return; }
   var a = dati.lavori.filter(function(l){
-    var t = norm([l.cliente, l.indirizzo, l.prev, l.note, l.tipo].join(' '));
+    var t = norm([l.cliente, l.indirizzo, l.prev, l.note, l.tipo, l.ref, l.tel, String(l.tel || '').replace(/\D/g, '')].join(' '));
     return parole.every(function(p){ return t.indexOf(p) >= 0; });
   }).sort(function(x, y){ return x.d > y.d ? -1 : x.d < y.d ? 1 : ordina(x, y); });   /* i più recenti in alto */
   $('cConta').textContent = a.length === 1 ? '1 lavoro' : a.length + ' lavori';
@@ -729,6 +745,8 @@ function apriAggiungi(lav){
   $('fOra').value = m ? (m.oraN || '') : '';
   $('fCliente').value = m ? m.cliente || '' : '';
   $('fIndirizzo').value = m ? m.indirizzo || '' : '';
+  $('fRef').value = m ? m.ref || '' : '';
+  $('fTel').value = m ? m.tel || '' : '';
   $('fPrev').value = m ? m.prev || '' : '';
   $('fNote').value = m ? m.note || '' : '';
   ['eData','eCliente','eTipo','fEsito'].forEach(function(id){ $(id).textContent = ''; });
@@ -751,7 +769,8 @@ function salvaAggiungi(){
   if (!aggTipo) { $('eTipo').textContent = 'Scegli il tipo di lavorazione'; ok = false; }
   if (!ok) return;
   var l = { data:$('fData').value, ora:$('fOra').value, cliente:$('fCliente').value, indirizzo:$('fIndirizzo').value,
-            tipo:aggTipo, preventivo:$('fPrev').value, priorita:aggPrio, note:$('fNote').value };
+            tipo:aggTipo, preventivo:$('fPrev').value, priorita:aggPrio, note:$('fNote').value,
+            referente:$('fRef').value, telefono:$('fTel').value };
   $('fSalva').disabled = true; $('fEsito').className = 'esito'; $('fEsito').textContent = 'Salvataggio…';
   var mod = aggModifica, run = google.script.run
     .withSuccessHandler(function(){
@@ -766,7 +785,7 @@ function salvaAggiungi(){
 }
 /* ---- FATT. (fatturazione): spunta veloce dalla TV, indipendente da Fatto ---- */
 function clicSpunta(e){
-  if (e.target.closest('a.mappa')) { e.stopPropagation(); return true; }   /* indirizzo: apre Google Maps */
+  if (e.target.closest('a.mappa,a.tel')) { e.stopPropagation(); return true; }   /* indirizzo: apre Google Maps */
   var el = e.target.closest('[data-f]'); if (!el) return false;
   e.stopPropagation();
   var l = dati && dati.lavori[+el.getAttribute('data-f')]; if (!l) return true;
@@ -797,6 +816,8 @@ function apriAzione(i){
   var l = dati && dati.lavori[i]; if (!l) return;
   azLav = { r:l.r, d:l.d, cliente:l.cliente, tipo:l.tipo, ora:l.oraN, fatto:!!l.fatto, i:i };
   $('azMappa').style.display = l.indirizzo ? '' : 'none';
+  $('azRif').innerHTML = (l.ref ? 'Referente: <b>' + esc(l.ref) + '</b>' : '') + (l.ref && l.tel ? ' · ' : '') + (l.tel ? '📞 ' + linkTel(l.tel) : '');
+  $('azRif').style.display = (l.ref || l.tel) ? '' : 'none';
   if (l.indirizzo) $('azMappa').href = 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + encodeURIComponent(l.indirizzo);
   $('azFatto').textContent = l.fatto ? 'Togli fatto' : '✓ Fatto';
   $('azFatto').className = 'btn verde' + (l.fatto ? ' on' : '');
