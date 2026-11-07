@@ -336,13 +336,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107223424';
+  var VERSIONE = '20261107223913';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107223424') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107223913') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -1029,7 +1029,7 @@ function orologio(){
 
 $('legenda').innerHTML = ['alta','media','bassa'].map(function(k){
     return '<span><i class="dot" style="background:'+PRIO[k].c+'"></i>Priorità ' + PRIO[k].nome.toLowerCase() + '</span>'; }).join('') +
-  '<span><i class="dot" style="background:'+VERDE+'"></i>Fatto</span><span><i class="dot" style="background:var(--accent)"></i>Fatt. = fatturazione</span><span>Clic su un lavoro per spostarlo o cancellarlo · clic su un giorno per aprirlo</span>';
+  '<span><i class="dot" style="background:'+VERDE+'"></i>Fatto</span><span>Clic su un lavoro per spostarlo o cancellarlo · clic su un giorno per aprirlo</span>';
 orologio(); setInterval(orologio, 1000);
 carica(); setInterval(carica, 60000);
 /* telefono: quando si torna sulla pagina (app riaperta, schermo sbloccato) i dati si ricaricano subito */
