@@ -69,6 +69,9 @@ h2 .conta{letter-spacing:.01em;text-transform:none;color:var(--dim);font-weight:
 .card .su{display:flex;justify-content:space-between;align-items:baseline;gap:.6vw}
 .tipo{font-size:.95vw;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
 .prev{font-size:.85vw;color:var(--dim);font-weight:600}
+.card .ti{display:flex;align-items:baseline;gap:.6vw;min-width:0}
+.ora-c{font-size:1.35vw;font-weight:800;font-variant-numeric:tabular-nums;color:var(--txt)}
+.card.fatto .ora-c{color:#8fe3b0}
 .cliente{font-size:1.5vw;font-weight:750;line-height:1.25;margin-top:.35vw}
 .indirizzo{font-size:1vw;color:var(--dim);margin-top:.15vw}
 .nota{font-size:.95vw;color:#ffd38a;margin-top:.35vw;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -243,6 +246,8 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   .sez{font-size:11px}
   .card{border-radius:10px;border-top-width:4px;padding:10px 12px}
   .tipo,.prev{font-size:12px}
+  .ora-c{font-size:17px}
+  .card .ti{gap:8px}
   .cliente{font-size:18px;white-space:normal}
   .indirizzo{font-size:13px;white-space:normal}
   a.mappa,a.tel{color:#7cc4ff;text-decoration:underline;text-underline-offset:2px}
@@ -340,13 +345,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107225754';
+  var VERSIONE = '20261107230050';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107225754') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107230050') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -529,18 +534,19 @@ function scorri(wrap){
 
 function card(l, rit){
   var p = pr(l);
-  var quando = rit ? 'dal ' + daChiave(l.d).getDate() + ' ' + MESI[daChiave(l.d).getMonth()].slice(0,3) : l.oraN;
+  var quando = rit ? 'dal ' + daChiave(l.d).getDate() + ' ' + MESI[daChiave(l.d).getMonth()].slice(0,3) : '';   /* l'ora va in alto a sinistra */
   /* ora, poi sulla stessa riga tempo stimato, viaggio e persone; la priorità si vede dal colore della barra */
   var tempi = [tempoTxt(l), l.pers ? '👥 ' + l.pers : ''].filter(Boolean).join(' · ');
   var etich = '<span class="destra">' + spunta(l) + '</span>';
   return '<div class="card' + (l.fatto?' fatto':'') + '" data-i="' + l.idx + '" style="--c:'+colore(l)+'">' +
-    '<div class="su"><span class="tipo" style="color:' + coloreTipo(l) + '">' + esc(l.tipo || 'Lavorazione') + '</span>' +
+    '<div class="su"><span class="ti">' + (l.oraN ? '<span class="ora-c">' + l.oraN + '</span>' : '') +
+      '<span class="tipo" style="color:' + coloreTipo(l) + '">' + esc(l.tipo || 'Lavorazione') + '</span></span>' +
       (l.prev ? '<span class="prev">Prev. ' + esc(l.prev) + '</span>' : '') + '</div>' +
     '<div class="cliente">' + esc(l.cliente) + '</div>' +
     '<div class="indirizzo">' + (l.indirizzo ? linkMappa(l.indirizzo) : '&nbsp;') + '</div>' +
     rigaRif(l) +
     (l.note ? '<div class="nota">' + esc(l.note) + '</div>' : '') +
-    '<div class="giu"><span class="sx"><span class="quando' + (rit?' r':'') + '">' + esc(quando || '') + '</span>' +
+    '<div class="giu"><span class="sx">' + (quando ? '<span class="quando r">' + esc(quando) + '</span>' : '') +
       (tempi ? '<span class="tempi">' + esc(tempi) + '</span>' : '') + '</span>' + etich + '</div></div>';
 }
 function linkTel(t){ return '<a class="tel" href="tel:' + String(t).replace(/[^\d+]/g, '') + '">' + esc(t) + '</a>'; }
