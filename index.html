@@ -49,6 +49,7 @@ main{flex:1;min-height:0;position:relative;display:grid;grid-template-rows:39fr 
 .bar.oggi{box-shadow:inset 0 0 0 .1vw var(--accent)}
 .bar.pass{opacity:.4}
 .bar.vuota .n{color:var(--faint)}
+.bar.pieno .n{color:#ff8a8d}
 .pannello{background:var(--panel);border-radius:.7vw;padding:.9vw 1vw 1vw;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 h2{display:flex;justify-content:space-between;align-items:baseline;gap:1vw;font-size:1.05vw;letter-spacing:.14em;
   text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:.7vw}
@@ -151,7 +152,7 @@ h2 .conta{letter-spacing:.01em;text-transform:none;color:var(--dim);font-weight:
 .form{display:grid;grid-template-columns:1fr 1fr;gap:.9vw 1.6vw;max-width:72vw;margin:0 auto}
 .form h2{grid-column:1/-1;margin-bottom:0}
 .campo label{display:block;font-size:max(12px,.85vw);font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:.4vw}
-.campo input,.campo textarea{width:100%;font:inherit;font-size:max(15px,1.15vw);color:var(--txt);background:var(--panel2);
+.campo input,.campo textarea,.campo select{width:100%;font:inherit;font-size:max(15px,1.15vw);color:var(--txt);background:var(--panel2);
   border:.1vw solid #2c3744;border-radius:.5vw;padding:.6vw .8vw;outline:none;color-scheme:dark}
 .campo textarea{resize:vertical;min-height:4.5vw}
 .campo input:focus,.campo textarea:focus{border-color:var(--accent)}
@@ -283,7 +284,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   .form{grid-template-columns:1fr;max-width:none;gap:12px}
   .coppia{gap:10px}
   .campo label{font-size:11px;margin-bottom:5px}
-  .campo input,.campo textarea{font-size:16px;padding:9px 10px;border-width:1px;border-radius:8px}
+  .campo input,.campo textarea,.campo select{font-size:16px;padding:9px 10px;border-width:1px;border-radius:8px}
   .campo textarea{min-height:70px}
   .scelte{gap:6px}
   .scelta{font-size:14px;padding:7px 12px;gap:6px;border-width:1.5px}
@@ -333,13 +334,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107222401';
+  var VERSIONE = '20261107222934';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107222401') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107222934') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -364,7 +365,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
       <div class="sett" id="sett"></div>
     </section>
     <section class="pannello carico" id="carico">
-      <div class="car-tit"><b>Carico</b><span id="caricoSott">prossime 4 settimane</span><div class="car-leg" id="caricoLeg"></div></div>
+      <div class="car-tit"><b>Carico · ore</b><span id="caricoSott">prossime 4 settimane</span><div class="car-leg" id="caricoLeg"></div></div>
       <div class="barre" id="barre"></div>
     </section>
     <section class="pannello mese-vista" id="meseVista">
@@ -436,6 +437,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
           <div><label for="fData">Data *</label><input type="date" id="fData"><div class="err" id="eData"></div></div>
           <div><label for="fOra">Ora</label><input type="time" id="fOra"></div>
         </div>
+        <div class="campo"><label for="fStima">Tempo stimato</label><select id="fStima"><option value="">—</option><option value="0.5">30 min</option><option value="1">1 ora</option><option value="1.5">1 ora e mezza</option><option value="2">2 ore</option><option value="3">3 ore</option><option value="4">4 ore (mezza giornata)</option><option value="5">5 ore</option><option value="6">6 ore</option><option value="8">8 ore (giornata intera)</option><option value="12">12 ore</option><option value="16">2 giornate</option><option value="24">3 giornate</option></select></div>
         <div class="campo"><label for="fPrev">Rif. preventivo n°</label><input id="fPrev" placeholder="448" autocomplete="off"></div>
         <div class="campo"><label for="fCliente">Nome cliente *</label><input id="fCliente" placeholder="Hotel Belvedere" autocomplete="off"><div class="err" id="eCliente"></div></div>
         <div class="campo"><label for="fIndirizzo">Indirizzo</label><input id="fIndirizzo" placeholder="Via Savona 1, Milano" autocomplete="off"></div>
@@ -519,6 +521,7 @@ function scorri(wrap){
 function card(l, rit){
   var p = pr(l);
   var quando = rit ? 'dal ' + daChiave(l.d).getDate() + ' ' + MESI[daChiave(l.d).getMonth()].slice(0,3) : l.oraN;
+  if (!rit && l.stima) quando = (quando ? quando + ' · ' : '') + '⏱ ' + oreTxt(l.stima);
   var etich = '<span class="destra"><span class="pill" style="background:'+p.c+'30;color:'+p.c+'">' + p.nome + '</span>' +
     spunta(l) + '</span>';
   return '<div class="card' + (l.fatto?' fatto':'') + '" data-i="' + l.idx + '" style="--c:'+colore(l)+'">' +
@@ -609,6 +612,10 @@ function render(){
 
 /* ---- CARICO: barre dei giorni lavorativi da questa settimana per 4 settimane, colorate per tipo ---- */
 var TIPI_CARICO = [['Posa','#ff5a5f'],['Consegna','#f5b52e'],['Ritiro','#4cc96f'],['Altro','#4cc2ff']];
+/* ore usate quando un lavoro non ha il tempo stimato: sopralluoghi e ritiri pesano poco */
+var ORE_TIPO = { 'posa':4, 'consegna':1, 'campioni':1, 'sopralluogo':0.5, 'ritiro':0.5, 'spedizione':0.5, 'promemoria':0 };
+function oreLavoro(l){ var n = Number(l.stima); if (n > 0) return n; var t = String(l.tipo || '').trim().toLowerCase(); return ORE_TIPO.hasOwnProperty(t) ? ORE_TIPO[t] : 1; }
+function oreTxt(h){ h = Math.round(Number(h) * 10) / 10; if (h === 0.5) return '30 min'; return String(h).replace('.', ',') + ' h'; }
 function renderCarico(){
   if (window.innerWidth <= 760) return;
   var oggi = new Date(), ko = chiave(oggi), d = new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate());
@@ -617,20 +624,21 @@ function renderCarico(){
   var giorni = [];
   for (var w = 0; w < 4; w++) for (var g = 0; g < 5; g++) giorni.push(new Date(d.getFullYear(), d.getMonth(), d.getDate() + w * 7 + g));
   var conti = giorni.map(function(x){
-    var a = mappa[chiave(x)] || [], c = { Posa:0, Consegna:0, Ritiro:0, Altro:0 };
-    a.forEach(function(l){ var t = String(l.tipo || '').trim(); c[c.hasOwnProperty(t) && t !== 'Altro' ? t : 'Altro']++; });
-    c.tot = a.length; return c;
+    var a = mappa[chiave(x)] || [], c = { Posa:0, Consegna:0, Ritiro:0, Altro:0, ore:0, n:a.length };
+    a.forEach(function(l){ var t = String(l.tipo || '').trim(), h = oreLavoro(l);
+      c[c.hasOwnProperty(t) && t !== 'Altro' && t !== 'ore' && t !== 'n' ? t : 'Altro'] += h; c.ore += h; });
+    return c;
   });
-  var max = Math.max(4, Math.max.apply(null, conti.map(function(c){ return c.tot; })));
+  var max = Math.max(8, Math.max.apply(null, conti.map(function(c){ return c.ore; })));
   var h = '';
   giorni.forEach(function(x, i){
     var k = chiave(x), c = conti[i];
     var segs = TIPI_CARICO.map(function(t){
       return c[t[0]] ? '<div class="seg" style="height:' + (c[t[0]] / max * 100) + '%;background:' + t[1] + '"></div>' : '';
     }).join('');
-    h += '<div class="bar' + (x.getDay() === 1 && i ? ' lun' : '') + (k === ko ? ' oggi' : '') + (k < ko ? ' pass' : '') + (c.tot ? '' : ' vuota') +
-      '" data-k="' + k + '" title="' + GIORNI[x.getDay()] + ' ' + x.getDate() + ': ' + c.tot + ' lavori">' +
-      '<div class="n">' + c.tot + '</div><div class="col">' + segs + '</div>' +
+    h += '<div class="bar' + (x.getDay() === 1 && i ? ' lun' : '') + (k === ko ? ' oggi' : '') + (k < ko ? ' pass' : '') + (c.ore ? '' : ' vuota') +
+      (c.ore > 8 ? ' pieno' : '') + '" data-k="' + k + '" title="' + GIORNI[x.getDay()] + ' ' + x.getDate() + ': ' + c.n + ' lavori, circa ' + oreTxt(c.ore) + '">' +
+      '<div class="n">' + (c.ore ? oreTxt(c.ore) : '–') + '</div><div class="col">' + segs + '</div>' +
       '<div class="g">' + GIORNI[x.getDay()].slice(0,3) + ' ' + x.getDate() + '</div></div>';
   });
   $('barre').innerHTML = h;
@@ -638,6 +646,7 @@ function renderCarico(){
   $('caricoSott').textContent = 'fino a ' + GIORNI[f.getDay()] + ' ' + f.getDate() + ' ' + MESI[f.getMonth()].slice(0,3);
 }
 $('caricoLeg').innerHTML = TIPI_CARICO.map(function(t){ return '<span><i style="background:' + t[1] + '"></i>' + t[0] + '</span>'; }).join('');
+$('caricoLeg').title = 'Ore stimate per giorno. Senza tempo stimato: posa 4 h, consegna e campioni 1 h, sopralluogo, ritiro e spedizione 30 min.';
 $('barre').onclick = function(e){ var b = e.target.closest('[data-k]'); if (b) apriGiorno(b.getAttribute('data-k')); };
 
 /* ---- CERCA: cliente, indirizzo, preventivo, note o tipo, in tutti i lavori caricati ---- */
@@ -802,6 +811,10 @@ function apriAggiungi(lav){
   $('fSalva').textContent = m ? 'Salva modifiche' : 'Aggiungi al calendario';
   $('fData').value = m ? m.d : (giornoSel || chiave(new Date()));
   $('fOra').value = m ? (m.oraN || '') : '';
+  $('fStima').value = m && m.stima ? String(m.stima) : '';
+  if (m && m.stima && $('fStima').value !== String(m.stima)) {          /* valore scritto a mano nel foglio */
+    var o = document.createElement('option'); o.value = String(m.stima); o.textContent = oreTxt(m.stima); $('fStima').appendChild(o); $('fStima').value = String(m.stima);
+  }
   $('fCliente').value = m ? m.cliente || '' : '';
   $('fIndirizzo').value = m ? m.indirizzo || '' : '';
   $('fRef').value = m ? m.ref || '' : '';
@@ -829,7 +842,7 @@ function salvaAggiungi(){
   if (!ok) return;
   var l = { data:$('fData').value, ora:$('fOra').value, cliente:$('fCliente').value, indirizzo:$('fIndirizzo').value,
             tipo:aggTipo, preventivo:$('fPrev').value, priorita:aggPrio, note:$('fNote').value,
-            referente:$('fRef').value, telefono:$('fTel').value };
+            referente:$('fRef').value, telefono:$('fTel').value, stima:$('fStima').value };
   $('fSalva').disabled = true; $('fEsito').className = 'esito'; $('fEsito').textContent = 'Salvataggio…';
   var mod = aggModifica, run = google.script.run
     .withSuccessHandler(function(){
@@ -886,6 +899,7 @@ function apriAzione(i){
   $('azTipo').style.color = coloreTipo(l);
   $('azCliente').textContent = l.cliente;
   $('azQuando').textContent = GIORNI[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()] + (l.oraN ? ' · ore ' + l.oraN : '') +
+    (l.stima ? ' · ⏱ ' + oreTxt(l.stima) : '') +
     (l.indirizzo ? ' · ' + l.indirizzo : '');
   $('azData').value = l.d; $('azOra').value = l.oraN || '';
   ['azEsitoS','azEsitoC','azEsitoF'].forEach(function(id){ $(id).textContent = ''; $(id).className = 'esito'; });
