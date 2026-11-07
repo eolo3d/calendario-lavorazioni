@@ -42,7 +42,7 @@ main{flex:1;min-height:0;position:relative;display:grid;grid-template-rows:39fr 
 .bar:hover{background:var(--panel2)}
 .bar.lun{margin-left:.9vw}
 .bar .n{font-size:.85vw;font-weight:800;line-height:1.2;color:var(--txt);min-height:1.1em}
-.bar .col{flex:1;min-height:0;width:62%;display:flex;flex-direction:column-reverse;justify-content:flex-start;gap:1px}
+.bar .col{position:relative;flex:1;min-height:0;width:62%;display:flex;flex-direction:column-reverse;justify-content:flex-start;gap:1px}
 .bar .seg{width:100%;border-radius:.15vw}
 .bar .g{font-size:.72vw;color:var(--dim);margin-top:.2vw;white-space:nowrap;font-weight:600}
 .bar.oggi .g{color:var(--accent);font-weight:800}
@@ -50,6 +50,8 @@ main{flex:1;min-height:0;position:relative;display:grid;grid-template-rows:39fr 
 .bar.pass{opacity:.4}
 .bar.vuota .n{color:var(--faint)}
 .bar.pieno .n{color:#ff8a8d}
+.bar.quasi .n{color:#f5c451}
+.bar .cap{position:absolute;left:-22%;right:-22%;height:0;border-top:.1vw dashed rgba(255,255,255,.35);pointer-events:none}
 .pannello{background:var(--panel);border-radius:.7vw;padding:.9vw 1vw 1vw;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 h2{display:flex;justify-content:space-between;align-items:baseline;gap:1vw;font-size:1.05vw;letter-spacing:.14em;
   text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:.7vw}
@@ -334,13 +336,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107222934';
+  var VERSIONE = '20261107223424';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107222934') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107223424') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -365,7 +367,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
       <div class="sett" id="sett"></div>
     </section>
     <section class="pannello carico" id="carico">
-      <div class="car-tit"><b>Carico · ore</b><span id="caricoSott">prossime 4 settimane</span><div class="car-leg" id="caricoLeg"></div></div>
+      <div class="car-tit"><b>Carico squadra</b><span id="caricoSott">prossime 4 settimane</span><div class="car-leg" id="caricoLeg"></div></div>
       <div class="barre" id="barre"></div>
     </section>
     <section class="pannello mese-vista" id="meseVista">
@@ -437,7 +439,10 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
           <div><label for="fData">Data *</label><input type="date" id="fData"><div class="err" id="eData"></div></div>
           <div><label for="fOra">Ora</label><input type="time" id="fOra"></div>
         </div>
-        <div class="campo"><label for="fStima">Tempo stimato</label><select id="fStima"><option value="">—</option><option value="0.5">30 min</option><option value="1">1 ora</option><option value="1.5">1 ora e mezza</option><option value="2">2 ore</option><option value="3">3 ore</option><option value="4">4 ore (mezza giornata)</option><option value="5">5 ore</option><option value="6">6 ore</option><option value="8">8 ore (giornata intera)</option><option value="12">12 ore</option><option value="16">2 giornate</option><option value="24">3 giornate</option></select></div>
+        <div class="campo coppia">
+          <div><label for="fStima">Tempo stimato</label><select id="fStima"><option value="">—</option><option value="0.5">30 min</option><option value="1">1 ora</option><option value="1.5">1 ora e mezza</option><option value="2">2 ore</option><option value="3">3 ore</option><option value="4">4 ore (mezza giornata)</option><option value="5">5 ore</option><option value="6">6 ore</option><option value="8">8 ore (giornata intera)</option><option value="12">12 ore</option><option value="16">2 giornate</option><option value="24">3 giornate</option></select></div>
+          <div><label for="fPers">Persone</label><select id="fPers"><option value="">—</option><option value="1">1 persona</option><option value="2">2 persone</option><option value="3">3 persone</option><option value="4">4 persone</option></select></div>
+        </div>
         <div class="campo"><label for="fPrev">Rif. preventivo n°</label><input id="fPrev" placeholder="448" autocomplete="off"></div>
         <div class="campo"><label for="fCliente">Nome cliente *</label><input id="fCliente" placeholder="Hotel Belvedere" autocomplete="off"><div class="err" id="eCliente"></div></div>
         <div class="campo"><label for="fIndirizzo">Indirizzo</label><input id="fIndirizzo" placeholder="Via Savona 1, Milano" autocomplete="off"></div>
@@ -522,6 +527,7 @@ function card(l, rit){
   var p = pr(l);
   var quando = rit ? 'dal ' + daChiave(l.d).getDate() + ' ' + MESI[daChiave(l.d).getMonth()].slice(0,3) : l.oraN;
   if (!rit && l.stima) quando = (quando ? quando + ' · ' : '') + '⏱ ' + oreTxt(l.stima);
+  if (!rit && l.pers) quando = (quando ? quando + ' · ' : '') + '👥 ' + l.pers;
   var etich = '<span class="destra"><span class="pill" style="background:'+p.c+'30;color:'+p.c+'">' + p.nome + '</span>' +
     spunta(l) + '</span>';
   return '<div class="card' + (l.fatto?' fatto':'') + '" data-i="' + l.idx + '" style="--c:'+colore(l)+'">' +
@@ -610,12 +616,31 @@ function render(){
   if (cercaAperto) renderCerca();
 }
 
-/* ---- CARICO: barre dei giorni lavorativi da questa settimana per 4 settimane, colorate per tipo ---- */
+/* ---- CARICO: ore-persona di ogni giorno lavorativo (tempo stimato × persone), rispetto alla squadra ----
+   capacità del giorno = SQUADRA persone × ORE_GIORNO ore. I lavori di più giornate si dividono sui giorni lavorativi seguenti. */
+var SQUADRA = 4, ORE_GIORNO = 8, CAPACITA = SQUADRA * ORE_GIORNO;
 var TIPI_CARICO = [['Posa','#ff5a5f'],['Consegna','#f5b52e'],['Ritiro','#4cc96f'],['Altro','#4cc2ff']];
-/* ore usate quando un lavoro non ha il tempo stimato: sopralluoghi e ritiri pesano poco */
+/* quando mancano tempo o persone: sopralluoghi e ritiri pesano poco, la posa di più */
 var ORE_TIPO = { 'posa':4, 'consegna':1, 'campioni':1, 'sopralluogo':0.5, 'ritiro':0.5, 'spedizione':0.5, 'promemoria':0 };
+var PERSONE_TIPO = { 'posa':2 };
 function oreLavoro(l){ var n = Number(l.stima); if (n > 0) return n; var t = String(l.tipo || '').trim().toLowerCase(); return ORE_TIPO.hasOwnProperty(t) ? ORE_TIPO[t] : 1; }
+function personeLavoro(l){ var n = Number(l.pers); if (n > 0) return n; return PERSONE_TIPO[String(l.tipo || '').trim().toLowerCase()] || 1; }
 function oreTxt(h){ h = Math.round(Number(h) * 10) / 10; if (h === 0.5) return '30 min'; return String(h).replace('.', ',') + ' h'; }
+function giornoLavDopo(d){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1); while (x.getDay() === 0 || x.getDay() === 6) x.setDate(x.getDate() + 1); return x; }
+function calcolaCarico(){
+  var c = {};
+  dati.lavori.forEach(function(l){
+    var ore = oreLavoro(l), pers = personeLavoro(l), t = String(l.tipo || '').trim();
+    var cat = (t === 'Posa' || t === 'Consegna' || t === 'Ritiro') ? t : 'Altro', d = daChiave(l.d), primo = true;
+    while (ore > 0) {
+      var h = Math.min(ore, ORE_GIORNO), k = chiave(d);
+      var g = c[k] = c[k] || { Posa:0, Consegna:0, Ritiro:0, Altro:0, tot:0, n:0, ore:0 };
+      g[cat] += h * pers; g.tot += h * pers; g.ore += h; if (primo) g.n++;
+      ore -= h; primo = false; d = giornoLavDopo(d);
+    }
+  });
+  return c;
+}
 function renderCarico(){
   if (window.innerWidth <= 760) return;
   var oggi = new Date(), ko = chiave(oggi), d = new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate());
@@ -623,30 +648,27 @@ function renderCarico(){
   d.setDate(d.getDate() - (d.getDay() - 1));                 /* lunedì */
   var giorni = [];
   for (var w = 0; w < 4; w++) for (var g = 0; g < 5; g++) giorni.push(new Date(d.getFullYear(), d.getMonth(), d.getDate() + w * 7 + g));
-  var conti = giorni.map(function(x){
-    var a = mappa[chiave(x)] || [], c = { Posa:0, Consegna:0, Ritiro:0, Altro:0, ore:0, n:a.length };
-    a.forEach(function(l){ var t = String(l.tipo || '').trim(), h = oreLavoro(l);
-      c[c.hasOwnProperty(t) && t !== 'Altro' && t !== 'ore' && t !== 'n' ? t : 'Altro'] += h; c.ore += h; });
-    return c;
-  });
-  var max = Math.max(8, Math.max.apply(null, conti.map(function(c){ return c.ore; })));
-  var h = '';
+  var car = calcolaCarico(), vuoto = { Posa:0, Consegna:0, Ritiro:0, Altro:0, tot:0, n:0, ore:0 };
+  var conti = giorni.map(function(x){ return car[chiave(x)] || vuoto; });
+  var max = Math.max(CAPACITA, Math.max.apply(null, conti.map(function(c){ return c.tot; })));
+  var linea = CAPACITA / max * 100, h = '';
   giorni.forEach(function(x, i){
-    var k = chiave(x), c = conti[i];
+    var k = chiave(x), c = conti[i], pc = Math.round(c.tot / CAPACITA * 100);
     var segs = TIPI_CARICO.map(function(t){
       return c[t[0]] ? '<div class="seg" style="height:' + (c[t[0]] / max * 100) + '%;background:' + t[1] + '"></div>' : '';
     }).join('');
-    h += '<div class="bar' + (x.getDay() === 1 && i ? ' lun' : '') + (k === ko ? ' oggi' : '') + (k < ko ? ' pass' : '') + (c.ore ? '' : ' vuota') +
-      (c.ore > 8 ? ' pieno' : '') + '" data-k="' + k + '" title="' + GIORNI[x.getDay()] + ' ' + x.getDate() + ': ' + c.n + ' lavori, circa ' + oreTxt(c.ore) + '">' +
-      '<div class="n">' + (c.ore ? oreTxt(c.ore) : '–') + '</div><div class="col">' + segs + '</div>' +
+    h += '<div class="bar' + (x.getDay() === 1 && i ? ' lun' : '') + (k === ko ? ' oggi' : '') + (k < ko ? ' pass' : '') + (c.tot ? '' : ' vuota') +
+      (pc > 100 ? ' pieno' : pc >= 75 ? ' quasi' : '') + '" data-k="' + k + '" title="' + GIORNI[x.getDay()] + ' ' + x.getDate() + ': ' + c.n + ' lavori · ' +
+      String(Math.round(c.tot * 10) / 10).replace('.', ',') + ' ore-persona su ' + CAPACITA + ' (' + pc + '%)">' +
+      '<div class="n">' + (c.tot ? pc + '%' : '–') + '</div><div class="col"><div class="cap" style="bottom:' + linea + '%"></div>' + segs + '</div>' +
       '<div class="g">' + GIORNI[x.getDay()].slice(0,3) + ' ' + x.getDate() + '</div></div>';
   });
   $('barre').innerHTML = h;
   var f = giorni[giorni.length - 1];
-  $('caricoSott').textContent = 'fino a ' + GIORNI[f.getDay()] + ' ' + f.getDate() + ' ' + MESI[f.getMonth()].slice(0,3);
+  $('caricoSott').textContent = 'squadra di ' + SQUADRA + ' · fino a ' + GIORNI[f.getDay()] + ' ' + f.getDate() + ' ' + MESI[f.getMonth()].slice(0,3);
 }
 $('caricoLeg').innerHTML = TIPI_CARICO.map(function(t){ return '<span><i style="background:' + t[1] + '"></i>' + t[0] + '</span>'; }).join('');
-$('caricoLeg').title = 'Ore stimate per giorno. Senza tempo stimato: posa 4 h, consegna e campioni 1 h, sopralluogo, ritiro e spedizione 30 min.';
+$('caricoLeg').title = 'Percentuale della giornata della squadra (' + SQUADRA + ' persone × ' + ORE_GIORNO + ' ore) occupata dai lavori: tempo stimato × persone. Se mancano: posa 4 h con 2 persone; consegna e campioni 1 h; sopralluogo, ritiro e spedizione 30 min; 1 persona.';
 $('barre').onclick = function(e){ var b = e.target.closest('[data-k]'); if (b) apriGiorno(b.getAttribute('data-k')); };
 
 /* ---- CERCA: cliente, indirizzo, preventivo, note o tipo, in tutti i lavori caricati ---- */
@@ -812,6 +834,7 @@ function apriAggiungi(lav){
   $('fData').value = m ? m.d : (giornoSel || chiave(new Date()));
   $('fOra').value = m ? (m.oraN || '') : '';
   $('fStima').value = m && m.stima ? String(m.stima) : '';
+  $('fPers').value = m && m.pers ? String(Math.min(m.pers, 4)) : '';
   if (m && m.stima && $('fStima').value !== String(m.stima)) {          /* valore scritto a mano nel foglio */
     var o = document.createElement('option'); o.value = String(m.stima); o.textContent = oreTxt(m.stima); $('fStima').appendChild(o); $('fStima').value = String(m.stima);
   }
@@ -842,7 +865,7 @@ function salvaAggiungi(){
   if (!ok) return;
   var l = { data:$('fData').value, ora:$('fOra').value, cliente:$('fCliente').value, indirizzo:$('fIndirizzo').value,
             tipo:aggTipo, preventivo:$('fPrev').value, priorita:aggPrio, note:$('fNote').value,
-            referente:$('fRef').value, telefono:$('fTel').value, stima:$('fStima').value };
+            referente:$('fRef').value, telefono:$('fTel').value, stima:$('fStima').value, persone:$('fPers').value };
   $('fSalva').disabled = true; $('fEsito').className = 'esito'; $('fEsito').textContent = 'Salvataggio…';
   var mod = aggModifica, run = google.script.run
     .withSuccessHandler(function(){
@@ -899,7 +922,7 @@ function apriAzione(i){
   $('azTipo').style.color = coloreTipo(l);
   $('azCliente').textContent = l.cliente;
   $('azQuando').textContent = GIORNI[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()] + (l.oraN ? ' · ore ' + l.oraN : '') +
-    (l.stima ? ' · ⏱ ' + oreTxt(l.stima) : '') +
+    (l.stima ? ' · ⏱ ' + oreTxt(l.stima) : '') + (l.pers ? ' · 👥 ' + l.pers + (l.pers == 1 ? ' persona' : ' persone') : '') +
     (l.indirizzo ? ' · ' + l.indirizzo : '');
   $('azData').value = l.d; $('azOra').value = l.oraN || '';
   ['azEsitoS','azEsitoC','azEsitoF'].forEach(function(id){ $(id).textContent = ''; $(id).className = 'esito'; });
