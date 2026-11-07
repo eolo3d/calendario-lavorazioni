@@ -149,6 +149,9 @@ h2 .conta{letter-spacing:.01em;text-transform:none;color:var(--dim);font-weight:
 .az-riga{display:flex;gap:1vw;align-items:flex-end;flex-wrap:wrap}
 .az-riga .campo{flex:1;min-width:10vw}
 .az-pulsanti{display:flex;gap:1vw;justify-content:flex-end;align-items:center;margin-top:1.1vw}
+.btn.verde{border-color:var(--ok);color:var(--ok)}
+.btn.verde:hover,.btn.verde:focus{background:var(--ok);color:#06210f}
+.btn.verde.on{background:var(--ok);color:#06210f}
 .btn.rosso{border-color:var(--alta);color:var(--alta)}
 .btn.rosso:hover,.btn.rosso:focus{background:var(--alta);color:#fff}
 .btn.rosso.pieno{background:var(--alta);color:#fff}
@@ -319,11 +322,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
         <div class="quando-az" id="azQuando"></div>
         <div class="az-passo" id="azScelta">
           <div class="az-pulsanti" style="justify-content:flex-start">
+            <button class="btn verde" id="azFatto">✓ Fatto</button>
             <button class="btn pieno" id="azSposta">Sposta</button>
             <button class="btn rosso" id="azCancella">Cancella</button>
             <span style="flex:1"></span>
             <button class="btn" id="azChiudi">Chiudi</button>
           </div>
+          <div class="az-pulsanti" style="justify-content:flex-start;margin-top:.6vw"><span class="esito" id="azEsitoF"></span></div>
         </div>
         <div class="az-passo" id="azPassoSposta" style="display:none">
           <div class="az-domanda">Spostare a quale data?</div>
@@ -653,7 +658,10 @@ function passoAz(quale){
 }
 function apriAzione(i){
   var l = dati && dati.lavori[i]; if (!l) return;
-  azLav = { r:l.r, d:l.d, cliente:l.cliente, tipo:l.tipo, ora:l.oraN };
+  azLav = { r:l.r, d:l.d, cliente:l.cliente, tipo:l.tipo, ora:l.oraN, fatto:!!l.fatto };
+  $('azFatto').textContent = l.fatto ? 'Togli fatto' : '✓ Fatto';
+  $('azFatto').className = 'btn verde' + (l.fatto ? ' on' : '');
+  $('azFatto').disabled = false;
   var d = daChiave(l.d);
   $('azTipo').textContent = l.tipo || 'Lavorazione';
   $('azTipo').style.color = coloreTipo(l);
@@ -661,7 +669,7 @@ function apriAzione(i){
   $('azQuando').textContent = GIORNI[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()] + (l.oraN ? ' · ore ' + l.oraN : '') +
     (l.indirizzo ? ' · ' + l.indirizzo : '');
   $('azData').value = l.d; $('azOra').value = l.oraN || '';
-  ['azEsitoS','azEsitoC'].forEach(function(id){ $(id).textContent = ''; $(id).className = 'esito'; });
+  ['azEsitoS','azEsitoC','azEsitoF'].forEach(function(id){ $(id).textContent = ''; $(id).className = 'esito'; });
   $('azConfermaS').disabled = false; $('azConfermaC').disabled = false;
   passoAz('scelta');
   azAperto = true; $('azVista').className = 'az-vista aperta';
@@ -692,6 +700,17 @@ function confermaCancella(){
     .withFailureHandler(function(e){ $('azConfermaC').disabled = false; esitoAz('azEsitoC', false, (e && e.message) || 'Non cancellato, riprova.'); })
     .cancellaDaTv(CHIAVE, azLav);
 }
+$('azFatto').onclick = function(){
+  var nuovo = !azLav.fatto;
+  $('azFatto').disabled = true; $('azEsitoF').className = 'esito'; $('azEsitoF').textContent = 'Salvataggio…';
+  google.script.run
+    .withSuccessHandler(function(){
+      esitoAz('azEsitoF', true, nuovo ? '✓ Segnato come fatto' : '✓ Tornato da fare');
+      carica(); setTimeout(chiudiAzione, 900);
+    })
+    .withFailureHandler(function(e){ $('azFatto').disabled = false; esitoAz('azEsitoF', false, (e && e.message) || 'Non salvato, riprova.'); })
+    .fattoDaTv(CHIAVE, { r:azLav.r, d:azLav.d, cliente:azLav.cliente }, nuovo);
+};
 $('azSposta').onclick = function(){ passoAz('sposta'); setTimeout(function(){ $('azData').focus(); }, 30); };
 $('azCancella').onclick = function(){ passoAz('cancella'); };
 $('azChiudi').onclick = chiudiAzione;
