@@ -313,16 +313,17 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107221359';
-  setInterval(function(){
+  var VERSIONE = '20261107221816';
+  window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107221359') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107221816') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
-  }, 3 * 60 * 1000);
+  };
+  setInterval(window.controllaVersione, 3 * 60 * 1000);
   window.google = { script: {} };
   Object.defineProperty(window.google.script, 'run', { get: nuovoRunner });
 })();
@@ -936,6 +937,11 @@ $('legenda').innerHTML = ['alta','media','bassa'].map(function(k){
   '<span><i class="dot" style="background:'+VERDE+'"></i>Fatto</span><span><i class="dot" style="background:var(--accent)"></i>Fatt. = fatturazione</span><span>Clic su un lavoro per spostarlo o cancellarlo · clic su un giorno per aprirlo</span>';
 orologio(); setInterval(orologio, 1000);
 carica(); setInterval(carica, 60000);
+/* telefono: quando si torna sulla pagina (app riaperta, schermo sbloccato) i dati si ricaricano subito */
+function alRitorno(){ if (document.hidden) return; orologio(); carica(); if (window.controllaVersione) window.controllaVersione(); }
+document.addEventListener('visibilitychange', alRitorno);
+window.addEventListener('pageshow', function(e){ if (e.persisted) alRitorno(); });
+window.addEventListener('online', function(){ carica(); });
 var tR; window.addEventListener('resize', function(){ clearTimeout(tR); tR = setTimeout(render, 300); });
 </script>
 </body>
