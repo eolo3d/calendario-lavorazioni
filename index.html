@@ -112,6 +112,10 @@ h2 .conta{letter-spacing:.01em;text-transform:none;color:var(--dim);font-weight:
 .giorno-vista{position:absolute;inset:0;z-index:6;display:none}
 .giorno-vista.aperta{display:flex}
 .giorno-vista h2 .nav{display:flex;gap:.6vw;align-items:center}
+.fatt-vista{position:absolute;inset:0;z-index:6;display:none}
+.fatt-vista.aperta{display:flex}
+.fatt-vista .scorri{overflow:auto}
+.fatt-vista h2 .nav{display:flex;gap:.8vw;align-items:center}
 .giorno, .cella{cursor:pointer}
 .giorno:hover, .cella:hover{box-shadow:inset 0 0 0 .12vw var(--dim)}
 .giorno.oggi:hover, .cella.oggi:hover{box-shadow:inset 0 0 0 .15vw var(--accent)}
@@ -183,6 +187,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   .data{grid-column:1/-1;grid-row:2;font-size:14px}
   #btnAggiungi{grid-column:1;grid-row:3}
   #btnMese{grid-column:2;grid-row:3}
+  #btnDaFatt{grid-column:1/-1;grid-row:4}
   .btn{font-size:14px;padding:9px 14px;border-width:1.5px;white-space:nowrap}
   .num{font-size:12px;padding:1px 7px;margin-left:6px}
   .btn .num{font-size:11px}
@@ -223,8 +228,10 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   .chip .spunta{right:6px;font-size:10px;gap:2px}
   .chip .spunta .q{width:22px;height:22px;font-size:15px}
   /* mese, giorno, aggiungi e azioni: a tutto schermo, da scorrere */
-  .mese-vista,.giorno-vista,.agg-vista{position:fixed;inset:0;border-radius:0;overflow:auto;padding:14px 12px}
-  .mese-vista.aperta,.giorno-vista.aperta,.agg-vista.aperta{display:block}
+  .mese-vista,.giorno-vista,.agg-vista,.fatt-vista{position:fixed;inset:0;border-radius:0;overflow:auto;padding:14px 12px}
+  .mese-vista.aperta,.giorno-vista.aperta,.agg-vista.aperta,.fatt-vista.aperta{display:block}
+  .fatt-vista .scorri{overflow:visible}
+  .fatt-vista h2 .nav .conta{display:none}
   .az-vista{position:fixed;border-radius:0}
   .mese{grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:none!important;gap:3px}
   .gs{font-size:10px;letter-spacing:.04em}
@@ -285,13 +292,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107194912';
+  var VERSIONE = '20261107200940';
   setInterval(function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107194912') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107200940') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   }, 3 * 60 * 1000);
@@ -303,7 +310,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   <header>
     <div class="sxh"><div class="titolo" id="titolo">Lavorazioni</div><button class="btn pieno" id="btnAggiungi">+ Aggiungi</button></div>
     <div class="data" id="data"></div>
-    <div class="dxh"><button class="btn" id="btnMese"><span id="btnMeseTxt">Mese</span><span class="num" id="nMeseBtn"></span></button><div class="ora" id="ora"></div></div>
+    <div class="dxh"><button class="btn" id="btnDaFatt"><span>Da fatt.</span><span class="num" id="nDaFatt"></span></button><button class="btn" id="btnMese"><span id="btnMeseTxt">Mese</span><span class="num" id="nMeseBtn"></span></button><div class="ora" id="ora"></div></div>
   </header>
   <main>
     <section class="pannello">
@@ -329,6 +336,11 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
           <button class="btn" id="gDopo" aria-label="Giorno successivo">›</button>
           <button class="btn" id="gChiudi">Chiudi</button></span></h2>
       <div class="scorri"><div class="griglia" id="listaGiorno"></div></div>
+    </section>
+    <section class="pannello fatt-vista" id="fattVista">
+      <h2><span>Da fatturare<span class="num" id="nDaFatt2">0</span></span>
+        <span class="nav"><span class="conta">lavori senza la spunta Fatt.</span><button class="btn" id="fattChiudi">Chiudi</button></span></h2>
+      <div class="scorri"><div class="griglia" id="listaFatt"></div></div>
     </section>
     <section class="az-vista" id="azVista">
       <div class="az-box">
@@ -398,7 +410,7 @@ var GIORNI = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì'
 var MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
 
 var dati = null, mappa = {}, ultimo = '', giornoReso = '', aggiornato = null, errore = false, rafId = null;
-var meseAperto = false, meseScarto = 0, timerChiudi = null, giornoSel = null, settTelefono = 4;
+var meseAperto = false, meseScarto = 0, timerChiudi = null, giornoSel = null, settTelefono = 4, fattAperto = false;
 var $ = function(id){ return document.getElementById(id); };
 
 function pr(l){ return PRIO[String(l.prio||'').trim().toLowerCase()] || PRIO.media; }
@@ -519,8 +531,31 @@ function render(){
   if ($('btnAltre')) $('btnAltre').onclick = function(e){ e.stopPropagation(); settTelefono += 4; render(); };
   [].forEach.call(document.querySelectorAll('#sett .box'), function(b){ adatta(b, ' altri'); });
 
+  $('nDaFatt').textContent = dati.lavori.filter(function(l){ return !l.fatt; }).length;
   if (meseAperto) renderMese();
   if (giornoSel) renderGiorno();
+  if (fattAperto) renderFatt();
+}
+
+/* ---- DA FATT.: tutti i lavori senza la spunta Fatt., per giorno ---- */
+function renderFatt(){
+  var a = dati.lavori.filter(function(l){ return !l.fatt; })
+    .sort(function(x, y){ return x.d < y.d ? -1 : x.d > y.d ? 1 : ordina(x, y); });
+  $('nDaFatt2').textContent = a.length;
+  var h = '', ult = '';
+  a.forEach(function(l){
+    if (l.d !== ult) { ult = l.d; var d = daChiave(l.d);
+      h += '<div class="sez">' + GIORNI[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()] + ' ' + d.getFullYear() + '</div>'; }
+    h += card(l);
+  });
+  $('listaFatt').innerHTML = h || '<div class="vuoto">Tutto fatturato</div>';
+}
+function apriFatt(si){
+  fattAperto = si;
+  if (si) { if (giornoSel) chiudiGiorno(); if (meseAperto) apriMese(false); renderFatt(); rinviaChiusura(); }
+  else if (!giornoSel && !meseAperto) clearTimeout(timerChiudi);
+  $('fattVista').className = 'pannello fatt-vista' + (si ? ' aperta' : '');
+  $('btnDaFatt').className = 'btn' + (si ? ' on' : '');
 }
 
 function renderGiorno(){
@@ -576,7 +611,7 @@ function renderMese(){
 
 /* mese e giorno si chiudono da soli dopo 2 minuti, così la TV torna sempre su oggi e settimana
    (non mentre si sta compilando il modulo Aggiungi) */
-function rinviaChiusura(){ clearTimeout(timerChiudi); if (window.innerWidth <= 760) return; timerChiudi = setTimeout(function(){ if (aggAperto || azAperto) return; chiudiGiorno(); apriMese(false); }, 120000); }
+function rinviaChiusura(){ clearTimeout(timerChiudi); if (window.innerWidth <= 760) return; timerChiudi = setTimeout(function(){ if (aggAperto || azAperto) return; chiudiGiorno(); apriMese(false); apriFatt(false); }, 120000); }
 function apriMese(si){
   meseAperto = si; if (si) meseScarto = 0;
   $('meseVista').className = 'pannello mese-vista' + (si ? ' aperta' : '');
@@ -586,7 +621,9 @@ function apriMese(si){
   if (si) { renderMese(); rinviaChiusura(); } else clearTimeout(timerChiudi);
 }
 function spostaMese(n){ meseScarto += n; renderMese(); rinviaChiusura(); }
-$('btnMese').onclick = function(){ if (giornoSel) chiudiGiorno(); apriMese(!meseAperto); };
+$('btnMese').onclick = function(){ if (giornoSel) chiudiGiorno(); if (fattAperto) apriFatt(false); apriMese(!meseAperto); };
+$('btnDaFatt').onclick = function(){ apriFatt(!fattAperto); };
+$('fattChiudi').onclick = function(){ apriFatt(false); };
 $('mChiudi').onclick = function(){ apriMese(false); };
 $('mPrima').onclick = function(){ spostaMese(-1); };
 $('mDopo').onclick = function(){ spostaMese(1); };
@@ -603,6 +640,7 @@ function clicGiorno(e){
 function clicLavoro(e){ if (clicSpunta(e)) return; var lav = e.target.closest('[data-i]'); if (lav) apriAzione(+lav.getAttribute('data-i')); }
 $('listaOggi').onclick = clicLavoro;
 $('listaGiorno').onclick = clicLavoro;
+$('listaFatt').onclick = clicLavoro;
 $('sett').onclick = clicGiorno;
 $('mese').onclick = clicGiorno;
 /* ---- AGGIUNGI dalla pagina ---- */
@@ -763,6 +801,7 @@ document.addEventListener('keydown', function(e){
   }
   if (e.key === 'a' || e.key === 'A') apriAggiungi();
   else if (e.key === 'm' || e.key === 'M') { if (giornoSel) chiudiGiorno(); apriMese(!meseAperto); }
+  else if (fattAperto && indietro) { apriFatt(false); e.preventDefault(); }
   else if (giornoSel && indietro) { chiudiGiorno(); e.preventDefault(); }
   else if (giornoSel && e.key === 'ArrowLeft') spostaGiorno(-1);
   else if (giornoSel && e.key === 'ArrowRight') spostaGiorno(1);
