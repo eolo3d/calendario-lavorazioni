@@ -336,13 +336,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107223913';
+  var VERSIONE = '20261107224528';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107223913') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107224528') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -526,7 +526,7 @@ function scorri(wrap){
 function card(l, rit){
   var p = pr(l);
   var quando = rit ? 'dal ' + daChiave(l.d).getDate() + ' ' + MESI[daChiave(l.d).getMonth()].slice(0,3) : l.oraN;
-  if (!rit && l.stima) quando = (quando ? quando + ' · ' : '') + '⏱ ' + oreTxt(l.stima);
+  if (!rit && (l.stima || l.viaggio)) quando = (quando ? quando + ' · ' : '') + tempoTxt(l);
   if (!rit && l.pers) quando = (quando ? quando + ' · ' : '') + '👥 ' + l.pers;
   var etich = '<span class="destra"><span class="pill" style="background:'+p.c+'30;color:'+p.c+'">' + p.nome + '</span>' +
     spunta(l) + '</span>';
@@ -623,6 +623,9 @@ var TIPI_CARICO = [['Posa','#ff5a5f'],['Consegna','#f5b52e'],['Ritiro','#4cc96f'
 /* quando mancano tempo o persone: sopralluoghi e ritiri pesano poco, la posa di più */
 var ORE_TIPO = { 'posa':4, 'consegna':1, 'campioni':1, 'sopralluogo':0.5, 'ritiro':0.5, 'spedizione':0.5, 'promemoria':0 };
 var PERSONE_TIPO = { 'posa':2 };
+/* "⏱ 2 h + V 00:40": tempo stimato più viaggio andata e ritorno (calcolato da Google Maps dalla sede) */
+function viaggioTxt(min){ min = Math.round(Number(min) || 0); return 'V ' + pad(Math.floor(min / 60)) + ':' + pad(min % 60); }
+function tempoTxt(l){ return '⏱ ' + (l.stima ? oreTxt(l.stima) : '') + (l.viaggio ? (l.stima ? ' + ' : '') + viaggioTxt(l.viaggio) : ''); }
 function oreLavoro(l){ var n = Number(l.stima); if (n > 0) return n; var t = String(l.tipo || '').trim().toLowerCase(); return ORE_TIPO.hasOwnProperty(t) ? ORE_TIPO[t] : 1; }
 function personeLavoro(l){ var n = Number(l.pers); if (n > 0) return n; return PERSONE_TIPO[String(l.tipo || '').trim().toLowerCase()] || 1; }
 function oreTxt(h){ h = Math.round(Number(h) * 10) / 10; if (h === 0.5) return '30 min'; return String(h).replace('.', ',') + ' h'; }
@@ -630,7 +633,7 @@ function giornoLavDopo(d){ var x = new Date(d.getFullYear(), d.getMonth(), d.get
 function calcolaCarico(){
   var c = {};
   dati.lavori.forEach(function(l){
-    var ore = oreLavoro(l), pers = personeLavoro(l), t = String(l.tipo || '').trim();
+    var ore = oreLavoro(l) + (Number(l.viaggio) || 0) / 60, pers = personeLavoro(l), t = String(l.tipo || '').trim();
     var cat = (t === 'Posa' || t === 'Consegna' || t === 'Ritiro') ? t : 'Altro', d = daChiave(l.d), primo = true;
     while (ore > 0) {
       var h = Math.min(ore, ORE_GIORNO), k = chiave(d);
@@ -668,7 +671,7 @@ function renderCarico(){
   $('caricoSott').textContent = 'squadra di ' + SQUADRA + ' · fino a ' + GIORNI[f.getDay()] + ' ' + f.getDate() + ' ' + MESI[f.getMonth()].slice(0,3);
 }
 $('caricoLeg').innerHTML = TIPI_CARICO.map(function(t){ return '<span><i style="background:' + t[1] + '"></i>' + t[0] + '</span>'; }).join('');
-$('caricoLeg').title = 'Percentuale della giornata della squadra (' + SQUADRA + ' persone × ' + ORE_GIORNO + ' ore) occupata dai lavori: tempo stimato × persone. Se mancano: posa 4 h con 2 persone; consegna e campioni 1 h; sopralluogo, ritiro e spedizione 30 min; 1 persona.';
+$('caricoLeg').title = 'Percentuale della giornata della squadra (' + SQUADRA + ' persone × ' + ORE_GIORNO + ' ore) occupata dai lavori: (tempo stimato + viaggio A/R) × persone. Se mancano: posa 4 h con 2 persone; consegna e campioni 1 h; sopralluogo, ritiro e spedizione 30 min; 1 persona.';
 $('barre').onclick = function(e){ var b = e.target.closest('[data-k]'); if (b) apriGiorno(b.getAttribute('data-k')); };
 
 /* ---- CERCA: cliente, indirizzo, preventivo, note o tipo, in tutti i lavori caricati ---- */
@@ -922,7 +925,7 @@ function apriAzione(i){
   $('azTipo').style.color = coloreTipo(l);
   $('azCliente').textContent = l.cliente;
   $('azQuando').textContent = GIORNI[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()] + (l.oraN ? ' · ore ' + l.oraN : '') +
-    (l.stima ? ' · ⏱ ' + oreTxt(l.stima) : '') + (l.pers ? ' · 👥 ' + l.pers + (l.pers == 1 ? ' persona' : ' persone') : '') +
+    (l.stima || l.viaggio ? ' · ' + tempoTxt(l) : '') + (l.pers ? ' · 👥 ' + l.pers + (l.pers == 1 ? ' persona' : ' persone') : '') +
     (l.indirizzo ? ' · ' + l.indirizzo : '');
   $('azData').value = l.d; $('azOra').value = l.oraN || '';
   ['azEsitoS','azEsitoC','azEsitoF'].forEach(function(id){ $(id).textContent = ''; $(id).className = 'esito'; });
