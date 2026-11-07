@@ -283,6 +283,18 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
     });
     return r;
   }
+  /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
+     (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
+  var VERSIONE = '20261107194912';
+  setInterval(function(){
+    fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ return r.text(); })
+      .then(function(t){
+        var m = t.match(/var VERSIONE = '([^']+)'/);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261107194912') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+      })
+      .catch(function(){});
+  }, 3 * 60 * 1000);
   window.google = { script: {} };
   Object.defineProperty(window.google.script, 'run', { get: nuovoRunner });
 })();
@@ -402,9 +414,9 @@ function hm(d){ return pad(d.getHours())+':'+pad(d.getMinutes()); }
 function settIso(d){ var t = new Date(d.getFullYear(), d.getMonth(), d.getDate()+3-((d.getDay()+6)%7));
   var g1 = new Date(t.getFullYear(),0,4); return 1+Math.round(((t-g1)/864e5-3+((g1.getDay()+6)%7))/7); }
 
-/* da fare prima dei fatti; poi priorità alta → bassa; poi per ora */
+/* ordine della giornata: priorità alta → bassa, poi per ora. Fatto e Fatt. NON cambiano la posizione. */
 function ordina(a,b){
-  return (a.fatto?1:0)-(b.fatto?1:0) || pr(a).o-pr(b).o || (a.oraN||'99').localeCompare(b.oraN||'99');
+  return pr(a).o-pr(b).o || (a.oraN||'99').localeCompare(b.oraN||'99') || (a.r||0)-(b.r||0);
 }
 /* nasconde gli ultimi elementi che non ci stanno e mostra "+N" */
 function adatta(box, etich){
