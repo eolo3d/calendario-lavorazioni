@@ -181,6 +181,19 @@ a.mappa,a.tel{color:inherit;text-decoration:none}
 .rif{font-size:.95vw;color:#b9c4d0;margin-top:.2vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card.fatto .rif{color:#8fe3b0}
 .az-rif{font-size:max(15px,1.15vw);margin-top:.4vw;color:var(--txt)}
+/* FOTO del lavoro */
+.az-foto{margin-top:.9vw;display:flex;flex-wrap:wrap;align-items:center;gap:.6vw}
+.foto-griglia{display:flex;flex-wrap:wrap;gap:.5vw;width:100%}
+.foto-griglia:empty{display:none}
+.foto-griglia .ft{width:max(64px,5.5vw);height:max(64px,5.5vw);border-radius:.4vw;background:var(--panel2) center/cover no-repeat;cursor:pointer;border:1px solid #2c3744}
+.foto-griglia .ft.carico{background-image:none;animation:pulsa 1.2s infinite alternate}
+@keyframes pulsa{from{opacity:.4}to{opacity:.9}}
+.btn-file{cursor:pointer;display:inline-block}
+.btn-file input{display:none}
+.foto-vista{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.93);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.2vw;padding:2vw}
+.foto-vista.aperta{display:flex}
+.foto-vista img{max-width:94vw;max-height:80vh;object-fit:contain;border-radius:.4vw}
+.foto-vista .az-pulsanti{display:flex;gap:1vw}
 .az-rif a.tel{color:#7cc4ff;font-weight:700;text-decoration:none}
 .az-box{position:relative}
 .az-mappa{position:absolute;top:1.2vw;right:1.4vw;width:max(52px,4vw);height:max(52px,4vw);border-radius:50%;background:#fff;
@@ -327,7 +340,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   var API = 'https://script.google.com/macros/s/AKfycbzOq5uRLYzRQ0vYWyZLhWh-01LlQS_ZQgGwBj5Ap1vGCBuv0ht3Uvu76kKVmTZVqAsx9Q/exec';
   var m = (location.hash + '&' + location.search).match(/[#?&]k=([A-Za-z0-9]+)/);
   document.body.setAttribute('data-k', m ? m[1] : '');
-  var FUNZIONI = ['getDati', 'aggiungiDaTv', 'spostaDaTv', 'cancellaDaTv', 'modificaDaTv', 'cercaIndirizzoDaTv', 'fattoDaTv', 'fatturaDaTv'];
+  var FUNZIONI = ['getDati', 'aggiungiDaTv', 'spostaDaTv', 'cancellaDaTv', 'modificaDaTv', 'cercaIndirizzoDaTv', 'caricaFotoDaTv', 'fotoDaTv', 'eliminaFotoDaTv', 'fattoDaTv', 'fatturaDaTv'];
   function nuovoRunner(){
     var ok = null, ko = null, r = {};
     r.withSuccessHandler = function(f){ ok = f; return r; };
@@ -348,13 +361,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261107232324';
+  var VERSIONE = '20261108091411';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261107232324') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261108091411') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -414,6 +427,9 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
         <div class="cliente" id="azCliente"></div>
         <div class="quando-az" id="azQuando"></div>
         <div class="az-rif" id="azRif"></div>
+        <div class="az-foto"><div class="foto-griglia" id="azFotoGriglia"></div>
+          <label class="btn btn-file">📷 Aggiungi foto<input type="file" accept="image/*" multiple id="azFotoIn"></label>
+          <span class="esito" id="azFotoEsito"></span></div>
         <a class="az-mappa" id="azMappa" href="#" target="_blank" rel="noopener" title="Naviga con Google Maps" aria-label="Naviga con Google Maps">
           <svg viewBox="0 0 24 34" aria-hidden="true"><path d="M12 0C5.4 0 0 5.3 0 11.9 0 20.8 12 34 12 34s12-13.2 12-22.1C24 5.3 18.6 0 12 0z" fill="#ea4335"/>
           <circle cx="12" cy="12" r="4.6" fill="#a50e0e"/></svg></a>
@@ -444,6 +460,8 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
         </div>
       </div>
     </section>
+    <div class="foto-vista" id="fotoVista"><img id="fotoGrande" alt="Foto del lavoro">
+      <div class="az-pulsanti"><button class="btn rosso" id="fotoElimina">Elimina foto</button><button class="btn pieno" id="fotoChiudi">Chiudi</button></div></div>
     <section class="agg-vista" id="aggVista">
       <div class="form">
         <h2><span id="fTitolo">Nuova lavorazione</span></h2>
@@ -465,6 +483,8 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
         <div class="campo largo"><label>Tipo lavorazione *</label><div class="scelte" id="fTipi"></div><div class="err" id="eTipo"></div></div>
         <div class="campo largo"><label>Priorità</label><div class="scelte" id="fPrio"></div></div>
         <div class="campo largo"><label for="fNote">Note</label><textarea id="fNote" placeholder="Portare la scala lunga, citofonare al 2° piano…"></textarea></div>
+        <div class="campo largo"><label>Foto</label><label class="btn btn-file">📷 Scegli o scatta foto<input type="file" accept="image/*" multiple id="fFotoIn"></label>
+          <span class="nota-ind" id="fFotoConta" style="margin-left:.8vw"></span></div>
         <div class="azioni"><span class="esito" id="fEsito"></span>
           <button class="btn" id="fAnnulla">Annulla</button><button class="btn pieno" id="fSalva">Aggiungi al calendario</button></div>
       </div>
@@ -539,7 +559,7 @@ function card(l, rit){
   var p = pr(l);
   var quando = rit ? 'dal ' + daChiave(l.d).getDate() + ' ' + MESI[daChiave(l.d).getMonth()].slice(0,3) : '';   /* l'ora va in alto a sinistra */
   /* ora, poi sulla stessa riga tempo stimato, viaggio e persone; la priorità si vede dal colore della barra */
-  var tempi = [tempoTxt(l), omini(l.pers)].filter(Boolean).join(' · ');
+  var tempi = [tempoTxt(l), omini(l.pers), l.foto && l.foto.length ? '📷 ' + l.foto.length : ''].filter(Boolean).join(' · ');
   var etich = '<span class="destra">' + spunta(l) + '</span>';
   return '<div class="card' + (l.fatto?' fatto':'') + '" data-i="' + l.idx + '" style="--c:'+colore(l)+'">' +
     '<div class="su"><span class="ti">' + (l.oraN ? '<span class="ora-c">' + l.oraN + '</span>' : '') +
@@ -863,7 +883,7 @@ function apriAggiungi(lav){
   $('fTel').value = m ? m.tel || '' : '';
   $('fPrev').value = m ? m.prev || '' : '';
   $('fNote').value = m ? m.note || '' : '';
-  ['eData','eCliente','eTipo','fEsito','fIndNota'].forEach(function(id){ $(id).textContent = ''; }); cercaInd++;
+  ['eData','eCliente','eTipo','fEsito','fIndNota','fFotoConta'].forEach(function(id){ $(id).textContent = ''; }); cercaInd++; aggFoto = [];
   indManuale = !!(m && m.indirizzo);   /* in modifica, un indirizzo già scritto non si tocca */
   aggTipo = ''; [].forEach.call($('fTipi').children, function(c){ c.classList.remove('on'); });
   var it = m ? TIPI.indexOf(m.tipo) : -1; if (it >= 0) $('fTipi').children[it].click();
@@ -888,9 +908,15 @@ function salvaAggiungi(){
             referente:$('fRef').value, telefono:$('fTel').value, stima:$('fStima').value, persone:$('fPers').value };
   $('fSalva').disabled = true; $('fEsito').className = 'esito'; $('fEsito').textContent = 'Salvataggio…';
   var mod = aggModifica, run = google.script.run
-    .withSuccessHandler(function(){
+    .withSuccessHandler(function(riga){
       $('fEsito').className = 'esito ok'; $('fEsito').textContent = (mod ? '✓ Salvata: ' : '✓ Aggiunta: ') + l.cliente.trim() + ' – ' + l.tipo;
-      carica(); setTimeout(chiudiAggiungi, 1500);
+      var foto = aggFoto; aggFoto = [];
+      if (!foto.length || !riga) { carica(); setTimeout(chiudiAggiungi, 1500); return; }
+      caricaFoto({ r: mod ? mod.r : riga, d: l.data, cliente: l.cliente.trim() }, foto, $('fEsito'), function(ids, errori){
+        $('fEsito').className = 'esito ' + (errori ? 'ko' : 'ok');
+        $('fEsito').textContent = errori ? '⚠ Lavoro salvato, ma ' + errori + ' foto non caricate' : '✓ Salvato con ' + ids.length + ' foto';
+        carica(); setTimeout(chiudiAggiungi, errori ? 3500 : 1500);
+      });
     })
     .withFailureHandler(function(e){
       $('fSalva').disabled = false; $('fEsito').className = 'esito ko';
@@ -898,6 +924,87 @@ function salvaAggiungi(){
     });
   if (mod) run.modificaDaTv(CHIAVE, mod, l); else run.aggiungiDaTv(CHIAVE, l);
 }
+/* ---- FOTO: si riducono nella pagina (max 1600 px, JPEG) e si salvano nel Drive tramite lo script ---- */
+var FOTO = {}, FOTO_P = {}, aggFoto = [], fotoAperta = null, fotoConferma = false;
+function riduciFoto(file, cb){
+  var fr = new FileReader();
+  fr.onload = function(){
+    var img = new Image();
+    img.onload = function(){
+      var s = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      cb(c.toDataURL('image/jpeg', 0.82).split(',')[1]);
+    };
+    img.onerror = function(){ cb(null); };
+    img.src = fr.result;
+  };
+  fr.onerror = function(){ cb(null); };
+  fr.readAsDataURL(file);
+}
+function caricaFoto(j, files, esitoEl, fine){
+  var i = 0, ids = [], errori = 0;
+  (function prossima(){
+    if (i >= files.length) { fine(ids, errori); return; }
+    esitoEl.className = 'esito'; esitoEl.textContent = '📷 Carico la foto ' + (i + 1) + ' di ' + files.length + '…';
+    riduciFoto(files[i], function(b64){
+      if (!b64) { errori++; i++; prossima(); return; }
+      google.script.run
+        .withSuccessHandler(function(id){ FOTO[id] = 'data:image/jpeg;base64,' + b64; ids.push(id); i++; prossima(); })
+        .withFailureHandler(function(){ errori++; i++; prossima(); })
+        .caricaFotoDaTv(CHIAVE, j, files[i].name || 'foto.jpg', b64);
+    });
+  })();
+}
+function mostraFotoLavoro(){
+  if (!azLav) return;
+  $('azFotoGriglia').innerHTML = azLav.foto.map(function(id){ return '<div class="ft carico" data-id="' + esc(id) + '"></div>'; }).join('');
+  azLav.foto.forEach(function(id){
+    var vedi = function(src){ var el = $('azFotoGriglia').querySelector('[data-id="' + id + '"]'); if (el) { el.className = 'ft'; el.style.backgroundImage = 'url(' + src + ')'; } };
+    if (FOTO_P[id] || FOTO[id]) { vedi(FOTO_P[id] || FOTO[id]); return; }
+    google.script.run.withSuccessHandler(function(r){ FOTO_P[id] = 'data:' + r.tipo + ';base64,' + r.dati; vedi(FOTO_P[id]); })
+      .withFailureHandler(function(){}).fotoDaTv(CHIAVE, id, true);
+  });
+}
+function apriFoto(id){
+  fotoAperta = id; fotoConferma = false; $('fotoElimina').textContent = 'Elimina foto';
+  $('fotoGrande').src = FOTO[id] || FOTO_P[id] || '';
+  $('fotoVista').className = 'foto-vista aperta';
+  if (!FOTO[id]) google.script.run.withSuccessHandler(function(r){ FOTO[id] = 'data:' + r.tipo + ';base64,' + r.dati; if (fotoAperta === id) $('fotoGrande').src = FOTO[id]; })
+    .withFailureHandler(function(){}).fotoDaTv(CHIAVE, id, false);
+}
+function chiudiFoto(){ fotoAperta = null; $('fotoVista').className = 'foto-vista'; $('fotoGrande').removeAttribute('src'); }
+$('azFotoGriglia').onclick = function(e){ var f = e.target.closest('[data-id]'); if (f) apriFoto(f.getAttribute('data-id')); };
+$('fotoChiudi').onclick = chiudiFoto;
+$('fotoVista').onclick = function(e){ if (e.target === $('fotoVista')) chiudiFoto(); };
+$('fotoElimina').onclick = function(){
+  if (!fotoAperta || !azLav) return;
+  if (!fotoConferma) { fotoConferma = true; $('fotoElimina').textContent = 'Sì, elimina'; return; }
+  var id = fotoAperta, lav = azLav;
+  $('fotoElimina').textContent = 'Elimino…';
+  google.script.run
+    .withSuccessHandler(function(){ lav.foto = lav.foto.filter(function(x){ return x !== id; }); chiudiFoto(); mostraFotoLavoro(); carica(); })
+    .withFailureHandler(function(e){ $('fotoElimina').textContent = (e && e.message) || 'Non eliminata'; })
+    .eliminaFotoDaTv(CHIAVE, { r:lav.r, d:lav.d, cliente:lav.cliente }, id);
+};
+$('azFotoIn').onchange = function(){
+  var files = [].slice.call(this.files || []); this.value = '';
+  if (!files.length || !azLav) return;
+  var lav = azLav;
+  caricaFoto({ r:lav.r, d:lav.d, cliente:lav.cliente }, files, $('azFotoEsito'), function(ids, errori){
+    lav.foto = lav.foto.concat(ids);
+    if (azLav === lav) mostraFotoLavoro();
+    $('azFotoEsito').className = 'esito ' + (errori ? 'ko' : 'ok');
+    $('azFotoEsito').textContent = errori ? '⚠ ' + errori + ' foto non caricate' : '✓ ' + ids.length + (ids.length === 1 ? ' foto caricata' : ' foto caricate');
+    carica();
+  });
+};
+$('fFotoIn').onchange = function(){
+  aggFoto = aggFoto.concat([].slice.call(this.files || [])); this.value = '';
+  $('fFotoConta').className = 'nota-ind ok';
+  $('fFotoConta').textContent = aggFoto.length ? aggFoto.length + (aggFoto.length === 1 ? ' foto pronta' : ' foto pronte') + ': si caricano al salvataggio' : '';
+};
+
 /* ---- FATT. (fatturazione): spunta veloce dalla TV, indipendente da Fatto ---- */
 function clicSpunta(e){
   if (e.target.closest('a.mappa,a.tel')) { e.stopPropagation(); return true; }   /* indirizzo: apre Google Maps */
@@ -933,6 +1040,7 @@ function apriAzione(i){
   $('azMappa').style.display = l.indirizzo ? '' : 'none';
   $('azRif').innerHTML = (l.ref ? 'Referente: <b>' + esc(l.ref) + '</b>' : '') + (l.ref && l.tel ? ' · ' : '') + (l.tel ? '📞 ' + linkTel(l.tel) : '');
   $('azRif').style.display = (l.ref || l.tel) ? '' : 'none';
+  azLav.foto = (l.foto || []).slice(); $('azFotoEsito').textContent = ''; mostraFotoLavoro();
   if (l.indirizzo) $('azMappa').href = 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + encodeURIComponent(l.indirizzo);
   $('azFatto').textContent = l.fatto ? 'Togli fatto' : '✓ Fatto';
   $('azFatto').className = 'btn verde' + (l.fatto ? ' on' : '');
@@ -1033,6 +1141,7 @@ $('fIndirizzo').oninput = function(){ cercaInd++; indManuale = !!$('fIndirizzo')
 
 document.addEventListener('keydown', function(e){
   var indietro = e.key === 'Escape' || e.key === 'Backspace' || e.key === 'GoBack';
+  if (fotoAperta) { if (e.key === 'Escape') chiudiFoto(); return; }
   if (azAperto) { if (e.key === 'Escape') chiudiAzione(); return; }
   if (cercaAperto) { if (e.key === 'Escape') apriCerca(false); return; }   /* si sta scrivendo nella ricerca */
   if (aggAperto) {                       /* mentre si scrive, i tasti rapidi sono spenti */
