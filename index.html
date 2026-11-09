@@ -45,6 +45,8 @@ main{flex:1;min-height:0;position:relative;display:grid;grid-template-rows:48fr 
 .av.oggi .q{color:#ffd38a}
 .avv-l .piu{align-self:center}
 .avv-l .vuoto{padding:1vw 0;font-size:1vw}
+#btnAvvisi,#avvChiudi{display:none}
+.avvisi h2 .nav{display:flex;gap:.6vw;align-items:center}
 .pannello{background:var(--panel);border-radius:.7vw;padding:.9vw 1vw 1vw;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 h2{display:flex;justify-content:space-between;align-items:baseline;gap:1vw;font-size:1.05vw;letter-spacing:.14em;
   text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:.7vw}
@@ -241,6 +243,15 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   #btnMese{grid-column:2;grid-row:3}
   #btnCerca{grid-column:1;grid-row:4}
   #btnDaFatt{grid-column:2;grid-row:4}
+  #btnAvvisi{display:block;grid-column:1/-1;grid-row:5}
+  #btnAvvisi{background:#1f9d55;border-color:#1f9d55;color:#fff}
+  #btnAvvisi .num{background:#fff;color:#1f9d55}
+  #btnAvvisi.ci-sono{background:#e5484d;border-color:#e5484d}
+  #btnAvvisi.ci-sono .num{color:#e5484d}
+  #avvisiPan{display:none}
+  #avvisiPan.aperta{display:block;position:fixed;inset:0;z-index:6;border-radius:0;overflow:auto;padding:14px 12px}
+  #avvChiudi{display:inline-block}
+  .avvisi h2 .nav{gap:8px}
   #cercaVista h2{flex-wrap:nowrap}
   .cerca-in{font-size:16px;padding:8px 10px;border-radius:8px;margin:0 8px 0 0}
   .btn{font-size:14px;padding:9px 14px;border-width:1.5px;white-space:nowrap}
@@ -362,13 +373,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261109193429';
+  var VERSIONE = '20261109194044';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261109193429') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261109194044') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -381,7 +392,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   <header>
     <div class="sxh"><div class="titolo" id="titolo">Grafix</div><button class="btn pieno" id="btnAggiungi">+ Aggiungi</button></div>
     <div class="data" id="data"></div>
-    <div class="dxh"><button class="btn" id="btnCerca">🔍 Cerca</button><button class="btn" id="btnDaFatt"><span>Da fatt.</span><span class="num" id="nDaFatt"></span></button><button class="btn" id="btnMese"><span id="btnMeseTxt">Mese</span><span class="num" id="nMeseBtn"></span></button><div class="ora" id="ora"></div></div>
+    <div class="dxh"><button class="btn" id="btnCerca">🔍 Cerca</button><button class="btn" id="btnAvvisi"><span>📢 Avvisi</span><span class="num" id="nAvvBtn"></span></button><button class="btn" id="btnDaFatt"><span>Da fatt.</span><span class="num" id="nDaFatt"></span></button><button class="btn" id="btnMese"><span id="btnMeseTxt">Mese</span><span class="num" id="nMeseBtn"></span></button><div class="ora" id="ora"></div></div>
   </header>
   <main>
     <section class="pannello">
@@ -393,7 +404,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
       <div class="sett" id="sett"></div>
     </section>
     <section class="pannello avvisi" id="avvisiPan">
-      <h2><span>Avvisi<span class="num" id="nAvv">0</span></span><button class="btn" id="btnAvviso">+ Avviso</button></h2>
+      <h2><span>Avvisi<span class="num" id="nAvv">0</span></span><span class="nav"><button class="btn" id="btnAvviso">+ Avviso</button><button class="btn" id="avvChiudi">Chiudi</button></span></h2>
       <div class="avv-l" id="listaAvv"></div>
     </section>
     <section class="pannello mese-vista" id="meseVista">
@@ -697,7 +708,9 @@ function renderAvvisi(){
   var ko = chiave(new Date());
   avvLista = (dati.avvisi || []).filter(function(a){ return (a.al || a.dal) >= ko; }).sort(function(a, b){
     return a.dal < b.dal ? -1 : a.dal > b.dal ? 1 : (a.dalle || '99').localeCompare(b.dalle || '99') || a.r - b.r; });
-  $('nAvv').textContent = avvLista.length;
+  $('nAvv').textContent = avvLista.length; $('nAvvBtn').textContent = avvLista.length;
+  /* telefono: tasto rosso se ci sono avvisi da oggi in poi, verde se non ce ne sono (quelli passati non contano) */
+  $('btnAvvisi').classList.toggle('ci-sono', avvLista.length > 0);
   $('listaAvv').innerHTML = avvLista.length ? avvLista.map(function(a, i){
       return '<div class="it av' + (a.dal <= ko ? ' oggi' : '') + '" data-a="' + i + '"><div class="q">' + esc(quandoAvviso(a)) + '</div>' +
         '<div class="t">' + (a.chi ? '<b>' + esc(a.chi) + '</b> · ' : '') + esc(a.testo) + '</div></div>';
@@ -711,6 +724,11 @@ function nomiAvvisi(){
   ((dati && dati.avvisi) || []).forEach(function(a){ if (a.chi) nomi[a.chi] = 1; });
   return Object.keys(nomi).sort();
 }
+/* telefono: il tasto Avvisi apre la lista degli avvisi a tutto schermo */
+var avvisiAperti = false;
+function mostraAvvisi(si){ avvisiAperti = si; $('avvisiPan').classList.toggle('aperta', si); if (si) window.scrollTo(0, 0); }
+$('btnAvvisi').onclick = function(){ mostraAvvisi(true); };
+$('avvChiudi').onclick = function(){ mostraAvvisi(false); };
 function apriAvviso(a){
   avvAperto = true; avvConferma = false; clearTimeout(timerChiudi);
   avvMod = a ? { r:a.r, dal:a.dal, testo:a.testo } : null;
@@ -1203,6 +1221,7 @@ document.addEventListener('keydown', function(e){
   if (azAperto) { if (e.key === 'Escape') chiudiAzione(); return; }
   if (cercaAperto) { if (e.key === 'Escape') apriCerca(false); return; }   /* si sta scrivendo nella ricerca */
   if (avvAperto) { if (e.key === 'Escape') chiudiAvviso(); return; }
+  if (avvisiAperti && e.key === 'Escape') { mostraAvvisi(false); return; }
   if (aggAperto) {                       /* mentre si scrive, i tasti rapidi sono spenti */
     if (e.key === 'Escape') chiudiAggiungi();
     return;
