@@ -195,6 +195,7 @@ table.pres{border-collapse:separate;border-spacing:.2vw;width:100%;table-layout:
 .pres .x .s{color:#f5b52e}.pres .x .p{color:#b98cff}.pres .x .k{color:#7cc4ff}.pres .x .n{color:#c3cbd4}
 .pres td.t{font-size:1vw;font-weight:800;background:#121920;border-radius:.3vw}
 .pres td.t.zero{color:var(--faint);font-weight:600}
+.pres td.nome .orario{display:block;font-size:.65vw;font-weight:600;color:var(--dim)}
 .pres-leg{margin-top:.8vw;font-size:.85vw;color:var(--dim);line-height:1.5}
 .pres-leg i{font-style:normal;font-weight:800}
 .pe-num{display:grid;grid-template-columns:repeat(3,1fr);gap:1vw;margin-top:1vw}
@@ -427,13 +428,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261109195745';
+  var VERSIONE = '20261109201116';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261109195745') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261109201116') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -910,18 +911,19 @@ function renderPresenze(){
   var d = presDati, giorni = giorniPres(), oggi = d.oggi;
   $('presPdf').disabled = false;
   if (!d.dipendenti.length) { $('presCorpo').innerHTML = '<div class="vuoto">Nessun dipendente: scrivi i nomi nel foglio Impostazioni, colonna F.</div>'; return; }
-  var TOT = [['Presente','Pres. gg'],['Ferie','Ferie gg'],['Permesso','Perm. gg'],['Malattia','Mal. gg'],['Assente','Ass. gg'],['str','Str. ore'],['perm','Perm. ore'],['km','Km']];
+  var TOT = [['Presente','Pres. gg'],['ore','Ore ord.'],['Ferie','Ferie gg'],['Permesso','Perm. gg'],['Malattia','Mal. gg'],['Assente','Ass. gg'],['str','Str. ore'],['perm','Perm. ore'],['km','Km']];
   var h = '<table class="pres"><tr><th class="nome"></th>' + giorni.map(function(x){
       return '<th class="g' + (x.we ? ' we' : '') + (x.fs ? ' fs' : '') + (x.d === oggi ? ' oggi' : '') + '">' + GG[x.dow].slice(0, 2) + '<b>' + x.g + '</b></th>'; }).join('') +
     TOT.map(function(t){ return '<th class="t">' + t[1] + '</th>'; }).join('') + '</tr>';
   d.dipendenti.forEach(function(nome, ni){
-    var t = { Presente:0, Ferie:0, Permesso:0, Malattia:0, Assente:0, str:0, perm:0, km:0 };
-    h += '<tr><td class="nome" title="' + esc(nome) + '">' + esc(nome) + '</td>';
+    var t = { Presente:0, ore:0, Ferie:0, Permesso:0, Malattia:0, Assente:0, str:0, perm:0, km:0 }, orario = (d.orari && d.orari[nome]) || [8,8,8,8,8];
+    h += '<tr><td class="nome" title="' + esc(nome) + ' · ' + esc(descrOrario(orario)) + '">' + esc(nome) + '<span class="orario">' + esc(descrOrario(orario)) + '</span></td>';
     giorni.forEach(function(x){
       var v = d.voci[x.d + '|' + nome], cls = 'c' + (x.we ? ' we' : '') + (x.fs ? ' fs' : '') + (x.d === oggi ? ' oggi' : ''), txt = '', col = '';
-      if (v) { var s = siglaP(v.stato); txt = s[1]; col = s[2]; t[s[0]]++; t.str += +v.str || 0; t.perm += +v.perm || 0; t.km += +v.km || 0; }
-      else if (x.fs && !x.we) txt = 'FS';
-      else if (!x.we && x.d <= oggi) { txt = 'P'; cls += ' impl'; t.Presente++; }
+      var std = x.we ? 0 : orario[x.dow - 1];
+      if (v) { var s = siglaP(v.stato); txt = s[1]; col = s[2]; t[s[0]]++; t.str += +v.str || 0; t.perm += +v.perm || 0; t.km += +v.km || 0; if (s[0] === 'Presente') t.ore += Math.max(0, std - (+v.perm || 0)); }
+      else if (x.fs) txt = 'FS';   /* anche di sabato o domenica */
+      else if (!x.we && x.d <= oggi) { txt = 'P'; cls += ' impl'; t.Presente++; t.ore += std; }
       var extra = v ? [v.str ? '<span class="s">+' + numP(v.str) + '</span>' : '', v.perm ? '<span class="p">−' + numP(v.perm) + '</span>' : '',
                        v.km ? '<span class="k">' + numP(v.km) + 'km</span>' : '', v.note && !v.str && !v.perm && !v.km ? '<span class="n">nota</span>' : ''].filter(Boolean).join(' ') : '';
       h += '<td class="' + cls + '" data-d="' + x.d + '" data-n="' + ni + '"' + (col ? ' style="color:' + col + '"' : '') +
@@ -931,7 +933,7 @@ function renderPresenze(){
   });
   h += '</table><div class="pres-leg">' + STATI_P.map(function(s){ return '<i style="color:' + s[2] + '">' + s[1] + '</i> ' + s[0].toLowerCase(); }).join(' · ') +
     ' · <i style="color:#ffd38a">FS</i> festività · <i style="color:#f5b52e">+2</i> ore di straordinario · <i style="color:#b98cff">−1</i> ore di permesso · <i style="color:#7cc4ff">km</i><br>' +
-    'Clic su un giorno per segnare ferie, permessi, malattia, straordinari o km. I giorni lavorativi senza segnalazioni contano come presenti (P chiaro).</div>';
+    'Clic su un giorno per segnare ferie, permessi, malattia, straordinari o km. I giorni lavorativi senza segnalazioni contano come presenti (P chiaro). Ore ord. = orario normale dei giorni di presenza meno le ore di permesso; l\'orario di ognuno si cambia nel foglio Impostazioni, colonna G.</div>';
   $('presCorpo').innerHTML = h;
 }
 STATI_P.forEach(function(s){
@@ -940,11 +942,18 @@ STATI_P.forEach(function(s){
   b.onclick = function(){ presStato = s[0]; [].forEach.call($('peStati').children, function(c){ c.classList.remove('on'); }); b.classList.add('on'); };
   $('peStati').appendChild(b);
 });
+function descrOrario(o){
+  var N = ['lun','mar','mer','gio','ven'], g = [];
+  o.forEach(function(h, i){ var u = g[g.length - 1]; if (u && u.h === h) u.a = i; else g.push({ h:h, da:i, a:i }); });
+  return g.map(function(x){ return numP(x.h) + ' h ' + N[x.da] + (x.a > x.da ? '-' + N[x.a] : ''); }).join(', ');
+}
 function apriPresEd(data, ni){
   var nome = presDati.dipendenti[ni], v = presDati.voci[data + '|' + nome] || {}, x = daChiave(data);
   presSel = { data:data, dip:nome }; presEdAperto = true;
   $('peData').textContent = GIORNI[x.getDay()] + ' ' + x.getDate() + ' ' + MESI[x.getMonth()] + (presDati.festivi.indexOf(data) >= 0 ? ' · festivo' : '');
+  var orario = (presDati.orari && presDati.orari[nome]) || [8,8,8,8,8], dw = x.getDay();
   $('peNome').textContent = nome;
+  $('peData').textContent += (dw >= 1 && dw <= 5 ? ' · orario ' + numP(orario[dw - 1]) + ' h' : '');
   var i = STATI_P.map(function(s){ return s[0]; }).indexOf(v.stato || 'Presente');
   $('peStati').children[i >= 0 ? i : 0].click();
   $('peStr').value = v.str || ''; $('pePerm').value = v.perm || ''; $('peKm').value = v.km || ''; $('peNote').value = v.note || '';
