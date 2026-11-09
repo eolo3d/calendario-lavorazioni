@@ -259,6 +259,8 @@ a.mappa,a.tel{color:inherit;text-decoration:none}
 .esito.ok{color:var(--ok)}.esito.ko{color:var(--alta)}
 .dot{display:inline-block;width:.6vw;height:.6vw;border-radius:50%;margin-right:.35vw;vertical-align:.05vw}
 
+.num.fatti{background:#1f9d55;color:#fff;margin-left:.4vw}
+.num.dafare{background:#e5484d;color:#fff;margin-left:.4vw}
 footer{display:flex;justify-content:space-between;align-items:center;font-size:.85vw;color:var(--dim)}
 .legenda{display:flex;gap:1.4vw}
 .legenda span{display:flex;align-items:center;gap:.4vw}
@@ -428,13 +430,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261109201116';
+  var VERSIONE = '20261109203558';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261109201116') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261109203558') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -451,11 +453,11 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   </header>
   <main>
     <section class="pannello">
-      <h2><span>Oggi<span class="num" id="nOggi">0</span></span><span class="conta" id="contaOggi"></span></h2>
+      <h2><span>Oggi<span class="num" id="nOggi">0</span><span class="num fatti" id="fOggi"></span><span class="num dafare" id="dOggi"></span></span><span class="conta" id="contaOggi"></span></h2>
       <div class="scorri" id="scorriOggi"><div class="griglia" id="listaOggi"><div class="vuoto">Caricamento…</div></div></div>
     </section>
     <section class="pannello">
-      <h2><span>Settimana<span class="num" id="nSett">0</span></span><span class="conta" id="titSett"></span></h2>
+      <h2><span>Settimana<span class="num" id="nSett">0</span><span class="num fatti" id="fSett"></span><span class="num dafare" id="dSett"></span></span><span class="conta" id="titSett"></span></h2>
       <div class="sett" id="sett"></div>
     </section>
     <section class="pannello avvisi" id="avvisiPan">
@@ -649,6 +651,14 @@ function adatta(box, etich){
     piu.textContent = '+' + n + etich; piu.style.display = '';
   }
 }
+/* settimana: in ogni giorno le schede si rimpiccioliscono finché ci stanno tutte (fino al 55%);
+   solo se sono ancora troppe compare "+N altri" */
+function adattaGiorno(box){
+  var d = box.querySelector('.dentro'); if (!d) return adatta(box, ' altri');
+  d.style.zoom = '';
+  if (window.innerWidth > 760) for (var i = 0; i <= 9 && box.scrollHeight > box.clientHeight + 1; i++) d.style.zoom = (1 - i * 0.05).toFixed(2);
+  adatta(box, ' altri');
+}
 /* "oggi": tutti i lavori visibili insieme. Se non ci stanno, le schede si rimpiccioliscono
    e si aggiungono colonne, finché entrano tutte nell'area (solo TV e PC; sul telefono si scorre) */
 function adattaOggi(){
@@ -666,6 +676,12 @@ function adattaOggi(){
   }
 }
 
+/* accanto a Oggi e Settimana: lavori fatti in verde, da fare in rosso */
+function contaFatti(lista, idF, idD){
+  var f = lista.filter(function(l){ return l.fatto; }).length, d = lista.length - f;
+  $(idF).textContent = '✓ ' + f + (f === 1 ? ' fatto' : ' fatti'); $(idF).style.display = lista.length ? '' : 'none';
+  $(idD).textContent = d + ' da fare'; $(idD).style.display = lista.length ? '' : 'none';
+}
 function card(l, rit){
   var p = pr(l);
   var quando = rit ? 'dal ' + daChiave(l.d).getDate() + ' ' + MESI[daChiave(l.d).getMonth()].slice(0,3) : '';   /* l'ora va in alto a sinistra */
@@ -721,13 +737,16 @@ function render(){
   $('listaOggi').innerHTML = h;
   var nFatti = lista.filter(function(l){ return l.fatto; }).length;
   $('nOggi').textContent = lista.length;
-  $('contaOggi').textContent = lista.length ? ((lista.length - nFatti) + ' da fare · ' + nFatti + ' fatti') : '';
+  $('contaOggi').textContent = '';
+  contaFatti(lista, 'fOggi', 'dOggi');
   adattaOggi();
 
   /* ---- SETTIMANA lun–ven (sabato e domenica mostrano la settimana dopo) ---- */
   var base = (oggi.getDay() === 0 || oggi.getDay() === 6) ? addG(lun(oggi), 7) : oggi, l0 = lun(base);
   var giorni = [0,1,2,3,4].map(function(i){ return addG(l0, i); }), ven = giorni[4];
-  $('nSett').textContent = giorni.reduce(function(n, d){ return n + (mappa[chiave(d)] || []).length; }, 0);
+  var tutteSett = giorni.reduce(function(a, d){ return a.concat(mappa[chiave(d)] || []); }, []);
+  $('nSett').textContent = tutteSett.length;
+  contaFatti(tutteSett, 'fSett', 'dSett');
   var pm = chiave(new Date(oggi.getFullYear(), oggi.getMonth(), 1)).slice(0,7);
   $('nMeseBtn').textContent = dati.lavori.filter(function(l){ return l.d.slice(0,7) === pm; }).length;
   $('titSett').textContent = (base === oggi ? '' : 'Prossima · ') + 'Sett. ' + settIso(l0) + ' · ' + l0.getDate() + ' ' +
@@ -736,7 +755,7 @@ function render(){
     var k = chiave(d), a = mappa[k] || [];
     var cls = k === ko ? ' oggi' : k < ko ? ' passato' : '';
     return '<div class="giorno' + cls + '" data-k="' + k + '"><div class="tg"><span>' + GG[d.getDay()] + '</span><b>' + d.getDate() + '</b></div>' +
-      '<div class="box">' + (a.length ? a.map(chip).join('') : '<div class="niente">—</div>') + '<div class="piu"></div></div></div>';
+      '<div class="box"><div class="dentro">' + (a.length ? a.map(chip).join('') : '<div class="niente">—</div>') + '<div class="piu"></div></div></div></div>';
   }
   var h = giorni.map(colonnaGiorno).join('');
   /* sul telefono la settimana non si ferma al venerdì: scorrendo seguono le settimane successive */
@@ -751,7 +770,7 @@ function render(){
   }
   $('sett').innerHTML = h;
   if ($('btnAltre')) $('btnAltre').onclick = function(e){ e.stopPropagation(); settTelefono += 4; render(); };
-  [].forEach.call(document.querySelectorAll('#sett .box'), function(b){ adatta(b, ' altri'); });
+  [].forEach.call(document.querySelectorAll('#sett .box'), adattaGiorno);
 
   renderAvvisi();
   $('nDaFatt').textContent = dati.lavori.filter(function(l){ return !l.fatt; }).length;
