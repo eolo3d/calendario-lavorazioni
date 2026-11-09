@@ -427,13 +427,13 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
   }
   /* La pagina si aggiorna da sola quando su GitHub c'è una versione nuova
      (GitHub tiene la pagina in cache 10 minuti: senza questo, TV e telefoni restano sulla vecchia). */
-  var VERSIONE = '20261109195239';
+  var VERSIONE = '20261109195745';
   window.controllaVersione = function(){
     fetch(location.pathname + '?controllo=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.text(); })
       .then(function(t){
         var m = t.match(/var VERSIONE = '([^']+)'/);
-        if (m && m[1] !== VERSIONE && m[1] !== '20261109195239') location.replace(location.pathname + '?v=' + m[1] + location.hash);
+        if (m && m[1] !== VERSIONE && m[1] !== '20261109195745') location.replace(location.pathname + '?v=' + m[1] + location.hash);
       })
       .catch(function(){});
   };
@@ -580,7 +580,6 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:.
           <button class="btn" id="presPrima" aria-label="Mese precedente">‹</button>
           <button class="btn" id="presDopo" aria-label="Mese successivo">›</button>
           <button class="btn" id="presPdf">📄 PDF per lo studio paghe</button>
-          <button class="btn" id="presBlocca" title="Dimentica il PIN su questo dispositivo">🔒</button>
           <button class="btn" id="presChiudi">Chiudi</button></span></h2>
       <div class="pres-corpo" id="presCorpo"></div>
     </section>
@@ -865,12 +864,12 @@ $('aSalva').onclick = salvaAvviso;
 $('aElimina').onclick = eliminaAvviso;
 ['aChi','aTesto'].forEach(function(id){ $(id).addEventListener('keydown', function(e){ if (e.key === 'Enter') salvaAvviso(); }); });
 
-/* ---- PRESENZE: un calendario a parte per i dipendenti, aperto con PIN ----
+/* ---- PRESENZE: un calendario a parte per i dipendenti, che le segnano da soli ----
    Ogni giorno lavorativo senza segnalazioni vale "presente": si segnano solo ferie, permessi, malattia,
    assenze, straordinari e km. Il PDF del mese lo prepara lo script (riepilogo + dettaglio giornaliero). */
 var STATI_P = [['Presente','P','#4cc96f'],['Ferie','F','#4cc2ff'],['Permesso','PE','#b98cff'],['Malattia','M','#ff8a8d'],['Assente','A','#c3cbd4']];
-var presAperto = false, presMese = '', presDati = null, presPin = '', presEdAperto = false, presSel = null, presStato = 'Presente', timerPres = null;
-try { presPin = localStorage.getItem('grafixPin') || ''; } catch (e) {}
+var presAperto = false, presMese = '', presDati = null, presPin = '-', presEdAperto = false, presSel = null, presStato = 'Presente', timerPres = null;
+try { localStorage.removeItem('grafixPin'); } catch (e) {}
 function cap(t){ return t.charAt(0).toUpperCase() + t.slice(1); }
 function siglaP(st){ for (var i = 0; i < STATI_P.length; i++) if (STATI_P[i][0] === st) return STATI_P[i]; return STATI_P[0]; }
 function numP(n){ n = Number(n) || 0; return String(Math.round(n * 100) / 100).replace('.', ','); }
@@ -884,32 +883,18 @@ function apriPresenze(si){
 /* su TV e PC le presenze si chiudono da sole dopo 5 minuti senza tocchi (sono dati personali) */
 function attesaPres(){ clearTimeout(timerPres); if (window.innerWidth <= 760 || !presAperto) return; timerPres = setTimeout(function(){ apriPresenze(false); }, 300000); }
 function titoloPres(){ var p = presMese.split('-'); return 'Presenze · ' + cap(MESI[+p[1] - 1]) + ' ' + p[0]; }
-function mostraPin(msg){
-  presDati = null; $('presPdf').disabled = true; $('presBlocca').style.display = 'none';
-  $('presCorpo').innerHTML = '<form class="pres-pin" id="presPinForm"><b>Inserisci il PIN delle presenze</b>' +
-    '<input type="password" id="presPinIn" inputmode="numeric" autocomplete="off" maxlength="8">' +
-    '<label class="ric"><input type="checkbox" id="presRicorda"> Ricorda su questo dispositivo</label>' +
-    '<div class="err">' + esc(msg || '') + '</div><button class="btn pieno" type="submit">Apri</button></form>';
-  $('presPinForm').onsubmit = function(e){ e.preventDefault(); var v = $('presPinIn').value.trim(); if (!v) return;
-    presPin = v; presRicorda = $('presRicorda').checked; caricaPresenze(); };
-  setTimeout(function(){ if ($('presPinIn')) $('presPinIn').focus(); }, 50);
-}
-var presRicorda = false;
 function caricaPresenze(){
   $('presTit').textContent = titoloPres(); $('presEsito').textContent = '';
-  if (!presPin) { mostraPin(''); return; }
   var mese = presMese;
   if (!presDati || presDati.mese !== mese) $('presCorpo').innerHTML = '<div class="vuoto">Caricamento…</div>';
   google.script.run
     .withSuccessHandler(function(d){
       if (mese !== presMese || !presAperto) return;
-      if (presRicorda) { try { localStorage.setItem('grafixPin', presPin); } catch (e) {} presRicorda = false; }
       presDati = d; renderPresenze();
     })
     .withFailureHandler(function(e){
       var m = (e && e.message) || 'Errore, riprova.';
-      if (/PIN/.test(m)) { presPin = ''; try { localStorage.removeItem('grafixPin'); } catch (x) {} mostraPin(m); }
-      else $('presCorpo').innerHTML = '<div class="vuoto">' + esc(m) + '</div>';
+      $('presCorpo').innerHTML = '<div class="vuoto">' + esc(m) + '</div>';
     })
     .getPresenzeDaTv(CHIAVE, presPin, mese);
 }
@@ -924,7 +909,6 @@ function giorniPres(){
 function renderPresenze(){
   var d = presDati, giorni = giorniPres(), oggi = d.oggi;
   $('presPdf').disabled = false;
-  $('presBlocca').style.display = (function(){ try { return localStorage.getItem('grafixPin') ? '' : 'none'; } catch (e) { return 'none'; } })();
   if (!d.dipendenti.length) { $('presCorpo').innerHTML = '<div class="vuoto">Nessun dipendente: scrivi i nomi nel foglio Impostazioni, colonna F.</div>'; return; }
   var TOT = [['Presente','Pres. gg'],['Ferie','Ferie gg'],['Permesso','Perm. gg'],['Malattia','Mal. gg'],['Assente','Ass. gg'],['str','Str. ore'],['perm','Perm. ore'],['km','Km']];
   var h = '<table class="pres"><tr><th class="nome"></th>' + giorni.map(function(x){
@@ -980,7 +964,6 @@ function salvaPresEd(){
     })
     .withFailureHandler(function(e){
       $('peSalva').disabled = false; $('peEsito').className = 'esito ko'; $('peEsito').textContent = (e && e.message) || 'Non salvato, riprova.';
-      if (/PIN/.test((e && e.message) || '')) { chiudiPresEd(); presPin = ''; mostraPin(e.message); }
     })
     .salvaPresenzaDaTv(CHIAVE, presPin, p);
 }
@@ -998,13 +981,12 @@ function pdfPresenze(){
     .withFailureHandler(function(e){ $('presPdf').disabled = false; $('presEsito').className = 'esito ko'; $('presEsito').textContent = (e && e.message) || 'PDF non riuscito'; })
     .pdfPresenzeDaTv(CHIAVE, presPin, presMese);
 }
-function spostaPres(n){ var p = presMese.split('-'), x = new Date(+p[0], +p[1] - 1 + n, 1); presMese = x.getFullYear() + '-' + pad(x.getMonth() + 1); presDati = presDati && presPin ? presDati : null; caricaPresenze(); }
+function spostaPres(n){ var p = presMese.split('-'), x = new Date(+p[0], +p[1] - 1 + n, 1); presMese = x.getFullYear() + '-' + pad(x.getMonth() + 1); caricaPresenze(); }
 $('btnPresenze').onclick = function(){ apriPresenze(!presAperto); };
 $('presChiudi').onclick = function(){ apriPresenze(false); };
 $('presPrima').onclick = function(){ spostaPres(-1); };
 $('presDopo').onclick = function(){ spostaPres(1); };
 $('presPdf').onclick = pdfPresenze;
-$('presBlocca').onclick = function(){ try { localStorage.removeItem('grafixPin'); } catch (e) {} presPin = ''; mostraPin('PIN dimenticato su questo dispositivo.'); };
 $('presCorpo').onclick = function(e){ var c = e.target.closest('td.c'); if (c) apriPresEd(c.getAttribute('data-d'), +c.getAttribute('data-n')); };
 $('peAnnulla').onclick = chiudiPresEd;
 $('peSalva').onclick = salvaPresEd;
